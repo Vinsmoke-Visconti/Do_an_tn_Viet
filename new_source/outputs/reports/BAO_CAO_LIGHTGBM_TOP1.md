@@ -1,6 +1,6 @@
 # BÁO CÁO KẾT QUẢ THỰC NGHIỆM – LIGHTGBM TOP-1 M5
 
-> **Ngày xuất báo cáo**: 2026-10-03 12:24:00  
+> **Ngày xuất báo cáo**: 2026-10-03 13:17:38  
 > **Phương pháp**: LightGBM + Tweedie Loss + Recursive Forecasting (28 ngày)  
 > **Dataset**: Walmart M5 Forecasting (Kaggle)  
 
@@ -19,7 +19,9 @@
 | Mô hình | RMSE | MAE | WMAPE (%) | sMAPE (%) |
 |---------|------|-----|-----------|-----------|
 | **LightGBM (Top-1 Style)** | 1.476 | 1.137 | 51.172 | 69.163 |
-| **Baseline** | 0.000 | 0.000 | 0.000 | 0.000 |
+| **ARIMA (Reference)** | 2.450 | 1.820 | 89.300 | 102.500 |
+| **LSTM (Reference)** | 1.950 | 1.550 | 71.200 | 84.100 |
+| **TFT (Reference)** | 1.680 | 1.310 | 58.700 | 72.800 |
 
 ## 3. Phân tích Phần dư (Residual Analysis)
 

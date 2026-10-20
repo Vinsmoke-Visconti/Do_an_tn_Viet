@@ -1,0 +1,695 @@
+% ============================================================
+%  CHƯƠNG 2: CƠ SỞ LÝ THUYẾT
+%  Đồ án tốt nghiệp – Dự báo nhu cầu bán lẻ với TFT
+%  Ngày tạo: 2026-10-06
+% ============================================================
+
+\chapter{Cơ sở lý thuyết}
+\label{chap:co_so_ly_thuyet}
+
+Chương này trình bày nền tảng lý thuyết cho toàn bộ nghiên cứu. Nội dung được tổ chức theo bốn nhóm chính: (1) bài toán dự báo chuỗi thời gian và phương pháp tiền xử lý dữ liệu; (2) các mô hình baseline bao gồm ARIMA, Prophet và LSTM; (3) kiến trúc Temporal Fusion Transformer (TFT) và cơ chế attention; và (4) các chỉ số đánh giá hiệu suất mô hình trên nhiều mức độ phân cấp.
+
+% ============================================================
+\section{Dự báo chuỗi thời gian}
+\label{sec:du_bao_chuoi_thoi_gian}
+
+\subsection{Định nghĩa và phân loại}
+\label{subsec:dinh_nghia}
+
+Chuỗi thời gian (time series) là tập hợp các quan sát được ghi nhận theo thứ tự thời gian $\{y_t\}_{t=1}^{T}$, trong đó $y_t \in \mathbb{R}$ là giá trị quan sát tại bước thời gian $t$. Bài toán dự báo chuỗi thời gian nhiều bước (multi-horizon forecasting) yêu cầu ước lượng véc-tơ:
+\begin{equation}
+    \hat{\mathbf{y}}_{t+1:t+H} = f\!\left(y_{1:t},\, \mathbf{x}_{1:t},\, \mathbf{s}\right),
+    \label{eq:du_bao_chung}
+\end{equation}
+trong đó $H$ là chân trời dự báo (forecast horizon), $\mathbf{x}_{1:t}$ là tập các biến ngoại sinh (exogenous variables) theo thời gian, và $\mathbf{s}$ là các đặc trưng tĩnh (static features) không thay đổi theo thời gian \citep{hyndman2018forecasting}.
+
+Chuỗi thời gian có thể được phân loại theo một số tiêu chí:
+\begin{itemize}
+    \item \textbf{Đơn biến (univariate)} -- chỉ có một chuỗi quan sát duy nhất;
+    \item \textbf{Đa biến (multivariate)} -- có nhiều chuỗi quan sát đồng thời, trong đó các biến có thể tương tác lẫn nhau;
+    \item \textbf{Thưa thớt / gián đoạn (intermittent demand)} -- chuỗi chứa nhiều giá trị bằng 0 xen kẽ, phổ biến trong dữ liệu bán lẻ cấp độ SKU \citep{syntetos2005accuracy}.
+\end{itemize}
+
+\subsection{Thành phần của chuỗi thời gian}
+\label{subsec:thanh_phan}
+
+Theo phương pháp phân tích cổ điển, một chuỗi thời gian $y_t$ có thể được phân tích thành các thành phần cơ bản:
+\begin{equation}
+    y_t = T_t + S_t + C_t + R_t,
+    \label{eq:phan_tich_chuoi}
+\end{equation}
+trong đó $T_t$ là xu hướng dài hạn (trend), $S_t$ là thành phần mùa vụ (seasonality), $C_t$ là thành phần chu kỳ (cyclic), và $R_t$ là phần dư (residual/irregular) \citep{hyndman2018forecasting}. Trong ngữ cảnh bán lẻ, thành phần mùa vụ $S_t$ đóng vai trò đặc biệt quan trọng, phản ánh các chu kỳ hàng tuần (weekly seasonality), hàng tháng và hàng năm trong hành vi mua sắm của người tiêu dùng.
+
+\subsection{Tính mùa vụ và xử lý trong dữ liệu bán lẻ}
+\label{subsec:mua_vu}
+
+Tính mùa vụ (seasonality) là hiện tượng mà chuỗi thời gian lặp lại các mô hình trong khoảng thời gian cố định $m$ (chu kỳ mùa vụ). Ví dụ, dữ liệu doanh số bán lẻ thường có $m = 7$ (tuần), $m = 365$ (năm). Để mô hình hóa tính mùa vụ phức tạp, các phương pháp phổ biến bao gồm:
+
+\begin{enumerate}
+    \item \textbf{Biến giả (dummy variables)}: Tạo các biến nhị phân cho mỗi chu kỳ, đơn giản nhưng không nắm bắt được dạng liên tục của mùa vụ.
+    \item \textbf{Chuỗi Fourier (Fourier series)}: Mô hình hóa mùa vụ bằng tổng các hàm sin/cosine với các tần số khác nhau \citep{taylor2018forecasting}:
+    \begin{equation}
+        S_t = \sum_{k=1}^{K} \left[a_k \cos\!\left(\frac{2\pi k t}{m}\right) + b_k \sin\!\left(\frac{2\pi k t}{m}\right)\right].
+        \label{eq:fourier_seasonality}
+    \end{equation}
+    \item \textbf{Seasonal Decomposition of Time Series (STL)}: Phương pháp phân tích Loess (LOESS) để tách riêng xu hướng và mùa vụ một cách linh hoạt \citep{cleveland1990stl}.
+\end{enumerate}
+
+\subsection{Tiền xử lý dữ liệu chuỗi thời gian đa biến}
+\label{subsec:tien_xu_ly}
+
+Tiền xử lý là bước quan trọng ảnh hưởng trực tiếp đến chất lượng dự báo. Đối với dữ liệu chuỗi thời gian đa biến trong bán lẻ, các bước tiền xử lý chính bao gồm:
+
+\subsubsection{Xử lý dữ liệu thiếu (Missing Data)}
+
+Dữ liệu thiếu trong chuỗi thời gian có thể xuất hiện do lỗi thu thập dữ liệu, sản phẩm tạm thời không có hàng, hoặc do các sự kiện đặc biệt. Các phương pháp phổ biến để xử lý:
+\begin{itemize}
+    \item \textbf{Nội suy tuyến tính (Linear interpolation)}: Điền giá trị thiếu bằng phép nội suy giữa hai điểm quan sát gần nhất;
+    \item \textbf{Điền trung bình/trung vị}: Sử dụng trung bình hoặc trung vị của cửa sổ trượt xung quanh;
+    \item \textbf{Forward/backward fill}: Điền theo giá trị quan sát cuối cùng (forward) hoặc tiếp theo (backward);
+    \item \textbf{Mô hình hóa}: Sử dụng mô hình như MICE (Multiple Imputation by Chained Equations) hoặc kNN imputation \citep{buuren2011mice}.
+\end{itemize}
+
+\subsubsection{Chuẩn hóa và biến đổi dữ liệu}
+
+Để đảm bảo tính ổn định trong quá trình huấn luyện mô hình deep learning, dữ liệu thường được chuẩn hóa theo phương pháp min-max hoặc z-score:
+\begin{equation}
+    \tilde{y}_t = \frac{y_t - \mu}{\sigma},
+    \label{eq:chuan_hoa}
+\end{equation}
+trong đó $\mu$ là trung bình và $\sigma$ là độ lệch chuẩn tính trên tập huấn luyện. Đối với chuỗi có phân phối lệch (skewed), phép biến đổi logarithm $\log(1 + y_t)$ thường được áp dụng để ổn định phương sai \citep{box1964analysis}.
+
+\subsubsection{Xây dựng đặc trưng (Feature Engineering)}
+
+Đặc trưng thời gian (temporal features) và đặc trưng cửa sổ trượt (rolling window features) là các thành phần quan trọng:
+\begin{itemize}
+    \item \textbf{Lag features}: $y_{t-1}, y_{t-7}, y_{t-14}, y_{t-28}$ -- phản ánh hành vi tự tương quan;
+    \item \textbf{Rolling statistics}: Trung bình trượt, độ lệch chuẩn trượt trên các cửa sổ 7, 14, 28 ngày;
+    \item \textbf{Đặc trưng lịch}: Ngày trong tuần, tuần trong năm, tháng, quý, chỉ thị ngày lễ;
+    \item \textbf{Đặc trưng giá}: Biến động giá, phần trăm giảm giá, momentum giá.
+\end{itemize}
+
+% ============================================================
+\section{Các mô hình baseline}
+\label{sec:mo_hinh_baseline}
+
+\subsection{Mô hình ARIMA}
+\label{subsec:arima}
+
+\subsubsection{Lịch sử và tổng quan}
+
+Mô hình ARIMA (Autoregressive Integrated Moving Average) được phát triển bởi Box và Jenkins và chính thức hóa trong tác phẩm \textit{Time Series Analysis: Forecasting and Control} \citep{box1970time}. Đây là một trong những phương pháp thống kê cổ điển nền tảng và được sử dụng rộng rãi nhất trong dự báo chuỗi thời gian trong nhiều thập kỷ.
+
+\subsubsection{Công thức toán học}
+
+Mô hình ARIMA$(p, d, q)$ bao gồm ba thành phần:
+
+\begin{itemize}
+    \item \textbf{AR -- Autoregressive (bậc $p$)}: Giá trị hiện tại là tổ hợp tuyến tính của $p$ giá trị quá khứ;
+    \item \textbf{I -- Integrated (bậc sai phân $d$)}: Lấy sai phân $d$ lần để đạt tính dừng (stationarity);
+    \item \textbf{MA -- Moving Average (bậc $q$)}: Giá trị hiện tại phụ thuộc vào $q$ nhiễu trắng quá khứ.
+\end{itemize}
+
+Gọi $B$ là toán tử trễ (backshift operator), $B^k y_t = y_{t-k}$, mô hình ARIMA$(p, d, q)$ được viết:
+\begin{equation}
+    \phi(B)(1 - B)^d y_t = c + \theta(B)\varepsilon_t,
+    \label{eq:arima}
+\end{equation}
+trong đó:
+\begin{align}
+    \phi(B) &= 1 - \phi_1 B - \phi_2 B^2 - \cdots - \phi_p B^p \quad \text{(đa thức AR)}, \notag \\
+    \theta(B) &= 1 + \theta_1 B + \theta_2 B^2 + \cdots + \theta_q B^q \quad \text{(đa thức MA)}, \notag \\
+    \varepsilon_t &\sim \mathcal{N}(0, \sigma^2) \quad \text{(nhiễu trắng)}. \notag
+\end{align}
+
+Đối với dữ liệu mùa vụ, mô hình được mở rộng thành SARIMA$(p,d,q)(P,D,Q)_m$:
+\begin{equation}
+    \Phi(B^m)\phi(B)(1-B^m)^D(1-B)^d y_t = \Theta(B^m)\theta(B)\varepsilon_t,
+    \label{eq:sarima}
+\end{equation}
+với $m$ là chu kỳ mùa vụ và $\Phi, \Theta$ là các đa thức AR, MA mùa vụ bậc $P, Q$ tương ứng.
+
+\subsubsection{Quy trình xây dựng mô hình Box-Jenkins}
+
+Phương pháp Box-Jenkins gồm ba giai đoạn lặp:
+\begin{enumerate}
+    \item \textbf{Nhận dạng (Identification)}: Kiểm định tính dừng (unit root tests như ADF, KPSS), phân tích hàm tự tương quan ACF và hàm tự tương quan riêng phần PACF để xác định $(p, d, q)$;
+    \item \textbf{Ước lượng (Estimation)}: Ước lượng tham số bằng phương pháp hợp lý cực đại (Maximum Likelihood Estimation);
+    \item \textbf{Kiểm định chẩn đoán (Diagnostic Checking)}: Kiểm tra phần dư xem có phải nhiễu trắng không (Ljung-Box test).
+\end{enumerate}
+
+\subsubsection{Ưu điểm và hạn chế}
+
+\textbf{Ưu điểm}: Nền tảng thống kê vững chắc, dễ giải thích, hiệu quả với dữ liệu tuyến tính và chuỗi ngắn.
+
+\textbf{Hạn chế}:
+\begin{itemize}
+    \item Giả định tuyến tính, không nắm bắt được các quan hệ phi tuyến;
+    \item Chỉ mô hình hóa đơn biến, khó kết hợp biến ngoại sinh (dù có biến thể ARIMAX);
+    \item Không hiệu quả với dữ liệu gián đoạn (intermittent demand);
+    \item Yêu cầu lựa chọn tham số thủ công và không tự động hóa tốt cho nhiều chuỗi song song.
+\end{itemize}
+
+% ----
+\subsection{Mô hình Prophet}
+\label{subsec:prophet}
+
+\subsubsection{Tổng quan}
+
+Prophet là thư viện dự báo mã nguồn mở được phát triển bởi Facebook (Meta) AI Research, giới thiệu trong bài báo \textit{Forecasting at Scale} \citep{taylor2018forecasting}. Prophet được thiết kế để xử lý các chuỗi thời gian kinh doanh có tính mùa vụ mạnh, dữ liệu thiếu và các điểm thay đổi xu hướng (changepoints).
+
+\subsubsection{Công thức toán học}
+
+Prophet sử dụng mô hình cộng (additive model):
+\begin{equation}
+    y_t = g(t) + s(t) + h(t) + \varepsilon_t,
+    \label{eq:prophet}
+\end{equation}
+trong đó:
+\begin{itemize}
+    \item $g(t)$: Hàm xu hướng -- có thể là tăng trưởng tuyến tính từng khúc (piecewise linear) hoặc tăng trưởng logistic;
+    \item $s(t)$: Thành phần mùa vụ được mô hình hóa bằng chuỗi Fourier (Phương trình \ref{eq:fourier_seasonality});
+    \item $h(t)$: Hiệu ứng ngày lễ và sự kiện đặc biệt (holiday effects);
+    \item $\varepsilon_t \sim \mathcal{N}(0, \sigma^2)$: Nhiễu ngẫu nhiên.
+\end{itemize}
+
+\textbf{Mô hình xu hướng tuyến tính từng khúc (Piecewise Linear Trend):}
+\begin{equation}
+    g(t) = (k + \mathbf{a}(t)^\top \boldsymbol{\delta}) t + (m + \mathbf{a}(t)^\top \boldsymbol{\gamma}),
+    \label{eq:prophet_trend}
+\end{equation}
+trong đó $k$ là tốc độ tăng trưởng cơ bản, $\boldsymbol{\delta}$ là điều chỉnh tốc độ tại các điểm thay đổi, $\mathbf{a}(t)$ là véc-tơ chỉ thị điểm thay đổi, và $m$ là hằng số dịch chuyển.
+
+\textbf{Hiệu ứng ngày lễ:}
+\begin{equation}
+    h(t) = \mathbf{Z}(t) \boldsymbol{\kappa},
+    \label{eq:prophet_holiday}
+\end{equation}
+với $\mathbf{Z}(t)$ là ma trận chỉ thị ngày lễ và $\boldsymbol{\kappa}$ là véc-tơ hệ số hiệu ứng ngày lễ.
+
+\subsubsection{Phương pháp suy luận Bayes}
+
+Prophet ước lượng tham số bằng phương pháp Maximum A Posteriori (MAP) thông qua thư viện Stan \citep{carpenter2017stan}. Cách tiếp cận Bayes cho phép kết hợp tri thức tiên nghiệm về tính mùa vụ và điểm thay đổi.
+
+\subsubsection{Ưu điểm và hạn chế}
+
+\textbf{Ưu điểm}: Tự động phát hiện điểm thay đổi xu hướng, xử lý tốt dữ liệu thiếu, dễ diễn giải, hỗ trợ ngày lễ theo từng quốc gia, và thích hợp cho nhiều người dùng không chuyên về thống kê.
+
+\textbf{Hạn chế}:
+\begin{itemize}
+    \item Bản chất đơn biến, không tận dụng tốt tương quan giữa các chuỗi song song;
+    \item Hiệu suất giảm với dữ liệu tần suất cao (daily) khi có nhiều chuỗi gián đoạn;
+    \item Không nắm bắt được các phụ thuộc phi tuyến phức tạp giữa các biến ngoại sinh.
+\end{itemize}
+
+% ----
+\subsection{Mô hình LSTM}
+\label{subsec:lstm}
+
+\subsubsection{Mạng nơ-ron hồi tiếp (RNN) và vấn đề vanishing gradient}
+
+Mạng nơ-ron hồi tiếp (Recurrent Neural Network -- RNN) là kiến trúc được thiết kế để xử lý dữ liệu tuần tự. Tại mỗi bước thời gian $t$, RNN duy trì một trạng thái ẩn (hidden state) $\mathbf{h}_t$:
+\begin{equation}
+    \mathbf{h}_t = f_\theta(\mathbf{h}_{t-1}, \mathbf{x}_t).
+    \label{eq:rnn}
+\end{equation}
+Tuy nhiên, RNN chuẩn gặp phải vấn đề vanishing gradient: trong quá trình lan truyền ngược qua nhiều bước thời gian, gradient suy giảm theo hàm mũ, khiến mô hình không thể học được các phụ thuộc dài hạn \citep{bengio1994learning}.
+
+\subsubsection{Kiến trúc LSTM}
+
+Long Short-Term Memory (LSTM) được giới thiệu bởi Hochreiter và Schmidhuber \citep{hochreiter1997long} như một giải pháp khắc phục vấn đề vanishing gradient. LSTM bổ sung vào RNN một \textit{ô nhớ} (cell state) $\mathbf{c}_t$ và ba cổng điều khiển:
+
+\textbf{Cổng quên (Forget Gate):}
+\begin{equation}
+    \mathbf{f}_t = \sigma\!\left(\mathbf{W}_f [\mathbf{h}_{t-1}, \mathbf{x}_t] + \mathbf{b}_f\right),
+    \label{eq:forget_gate}
+\end{equation}
+
+\textbf{Cổng đầu vào (Input Gate):}
+\begin{equation}
+    \mathbf{i}_t = \sigma\!\left(\mathbf{W}_i [\mathbf{h}_{t-1}, \mathbf{x}_t] + \mathbf{b}_i\right),
+    \label{eq:input_gate}
+\end{equation}
+
+\textbf{Ô nhớ ứng viên (Candidate Cell):}
+\begin{equation}
+    \tilde{\mathbf{c}}_t = \tanh\!\left(\mathbf{W}_c [\mathbf{h}_{t-1}, \mathbf{x}_t] + \mathbf{b}_c\right),
+    \label{eq:candidate_cell}
+\end{equation}
+
+\textbf{Cập nhật ô nhớ:}
+\begin{equation}
+    \mathbf{c}_t = \mathbf{f}_t \odot \mathbf{c}_{t-1} + \mathbf{i}_t \odot \tilde{\mathbf{c}}_t,
+    \label{eq:cell_update}
+\end{equation}
+
+\textbf{Cổng đầu ra (Output Gate):}
+\begin{equation}
+    \mathbf{o}_t = \sigma\!\left(\mathbf{W}_o [\mathbf{h}_{t-1}, \mathbf{x}_t] + \mathbf{b}_o\right),
+    \label{eq:output_gate}
+\end{equation}
+
+\textbf{Trạng thái ẩn:}
+\begin{equation}
+    \mathbf{h}_t = \mathbf{o}_t \odot \tanh(\mathbf{c}_t),
+    \label{eq:hidden_state}
+\end{equation}
+
+trong đó $\sigma(\cdot)$ là hàm sigmoid, $\odot$ là phép nhân từng phần tử (element-wise product), và $\mathbf{W}_f, \mathbf{W}_i, \mathbf{W}_c, \mathbf{W}_o, \mathbf{b}_f, \mathbf{b}_i, \mathbf{b}_c, \mathbf{b}_o$ là các tham số có thể học.
+
+Cơ chế hoạt động của các cổng trong LSTM được tóm tắt như sau:
+\begin{itemize}
+    \item \textbf{Cổng quên $\mathbf{f}_t$}: Quyết định bao nhiêu thông tin từ ô nhớ cũ $\mathbf{c}_{t-1}$ được giữ lại. Giá trị gần 0 nghĩa là quên, gần 1 nghĩa là giữ lại.
+    \item \textbf{Cổng đầu vào $\mathbf{i}_t$}: Quyết định thông tin mới nào từ đầu vào $\mathbf{x}_t$ được ghi vào ô nhớ.
+    \item \textbf{Cổng đầu ra $\mathbf{o}_t$}: Quyết định thông tin nào từ ô nhớ được xuất ra làm trạng thái ẩn $\mathbf{h}_t$.
+\end{itemize}
+
+Nhờ cấu trúc này, LSTM có thể duy trì ``dòng chảy gradient không đổi'' (constant error carousel), cho phép học được các phụ thuộc trải dài hàng trăm đến hàng nghìn bước thời gian \citep{hochreiter1997long}.
+
+\subsubsection{LSTM trong dự báo chuỗi thời gian}
+
+Để áp dụng LSTM cho dự báo đa bước, có hai chiến lược phổ biến:
+\begin{enumerate}
+    \item \textbf{Direct multi-output}: Sử dụng một LSTM với lớp đầu ra có $H$ nơ-ron, dự báo trực tiếp $H$ bước;
+    \item \textbf{Recursive (one-step-ahead)}: Dự báo tuần tự, sử dụng giá trị dự báo $\hat{y}_{t+1}$ làm đầu vào cho bước tiếp theo, nhưng có nguy cơ tích lũy sai số.
+\end{enumerate}
+
+Kiến trúc Seq2Seq (Sequence-to-Sequence) với encoder-decoder LSTM \citep{sutskever2014sequence} là lựa chọn phổ biến cho dự báo đa bước:
+\begin{equation}
+    \mathbf{h}_{\text{enc}} = \text{LSTM}_{\text{enc}}(y_{1:t}, \mathbf{x}_{1:t}), \quad
+    \hat{y}_{t+1:t+H} = \text{LSTM}_{\text{dec}}(\mathbf{h}_{\text{enc}}, \mathbf{x}^{\text{future}}_{t+1:t+H}).
+    \label{eq:seq2seq}
+\end{equation}
+
+\subsubsection{Ưu điểm và hạn chế}
+
+\textbf{Ưu điểm}: Nắm bắt tốt các phụ thuộc phi tuyến và dài hạn, xử lý được đa biến, linh hoạt trong thiết kế kiến trúc.
+
+\textbf{Hạn chế}:
+\begin{itemize}
+    \item Chi phí huấn luyện lớn, xử lý tuần tự hạn chế khả năng song song hóa;
+    \item Khó giải thích (black-box), không cung cấp trực tiếp mức độ quan trọng của đặc trưng;
+    \item Với các phụ thuộc cực dài, LSTM vẫn có thể gặp khó khăn dù đã giảm thiểu vấn đề vanishing gradient.
+\end{itemize}
+
+% ============================================================
+\section{Temporal Fusion Transformer (TFT)}
+\label{sec:tft}
+
+\subsection{Tổng quan và động lực}
+\label{subsec:tft_tong_quan}
+
+Temporal Fusion Transformer (TFT) được giới thiệu bởi Lim và cộng sự \citep{lim2021temporal} như một kiến trúc deep learning tích hợp nhiều cơ chế tiên tiến nhằm giải quyết đồng thời hai thách thức chính của dự báo chuỗi thời gian thực tế:
+
+\begin{enumerate}
+    \item \textbf{Hiệu suất cao}: Đạt kết quả vượt trội so với các mô hình baseline trên nhiều bộ dữ liệu chuẩn (M4, M5, traffic, electricity);
+    \item \textbf{Khả năng diễn giải (Interpretability)}: Cung cấp cơ chế phân tích mức độ quan trọng của đặc trưng và phụ thuộc thời gian thông qua attention weights.
+\end{enumerate}
+
+TFT được thiết kế để xử lý ba loại đầu vào phổ biến trong bài toán dự báo thực tế:
+\begin{itemize}
+    \item \textbf{Đặc trưng tĩnh} (Static covariates) $\mathbf{s}$: Không thay đổi theo thời gian (ví dụ: mã sản phẩm, cửa hàng, danh mục);
+    \item \textbf{Đặc trưng thời gian đã biết trong tương lai} (Known future inputs) $\mathbf{x}^{(\text{future})}_t$: Có thể biết trước tại thời điểm dự báo (ví dụ: ngày lễ, lịch khuyến mãi đã lên kế hoạch);
+    \item \textbf{Đặc trưng thời gian chỉ quan sát được trong quá khứ} (Observed inputs) $\mathbf{x}^{(\text{obs})}_t$: Chỉ có sẵn trong quá khứ (ví dụ: doanh số, lượng hàng tồn kho thực tế, giá niêm yết).
+\end{itemize}
+
+\subsection{Kiến trúc tổng thể của TFT}
+\label{subsec:tft_kien_truc}
+
+Kiến trúc TFT gồm năm thành phần chính được tích hợp theo luồng xử lý tuần tự:
+
+\begin{center}
+\textit{Static Covariate Encoders} $\rightarrow$ \textit{Variable Selection Networks} $\rightarrow$ \textit{Seq2Seq LSTM Encoder-Decoder} $\rightarrow$ \textit{Interpretable Multi-Head Attention} $\rightarrow$ \textit{Output Layer}
+\end{center}
+
+\subsection{Gated Residual Network (GRN)}
+\label{subsec:grn}
+
+Nền tảng cơ bản của TFT là khối \textbf{Gated Residual Network (GRN)}, được sử dụng xuyên suốt kiến trúc để linh hoạt điều chỉnh lượng thông tin cần xử lý:
+\begin{equation}
+    \text{GRN}(\mathbf{a}, \mathbf{c}) = \text{LayerNorm}\!\left(\mathbf{a} + \text{GLU}\!\left(\eta_1(\mathbf{a}, \mathbf{c})\right)\right),
+    \label{eq:grn}
+\end{equation}
+trong đó $\eta_1$ là đầu ra của lớp tuyến tính ẩn với ngữ cảnh $\mathbf{c}$ tùy chọn:
+\begin{align}
+    \eta_1 &= \mathbf{W}_1 \mathbf{a} + \mathbf{W}_c \mathbf{c} + \mathbf{b}_1, \notag \\
+    \eta_2 &= \text{ELU}(\mathbf{W}_2 \eta_1 + \mathbf{b}_2). \notag
+\end{align}
+
+Hàm kích hoạt cổng \textbf{Gated Linear Unit (GLU)} điều khiển lượng thông tin phi tuyến truyền qua:
+\begin{equation}
+    \text{GLU}(\boldsymbol{\gamma}) = \boldsymbol{\gamma}_1 \odot \sigma(\boldsymbol{\gamma}_2),
+    \label{eq:glu}
+\end{equation}
+trong đó $\boldsymbol{\gamma} = [\boldsymbol{\gamma}_1; \boldsymbol{\gamma}_2]$ là véc-tơ được chia đôi. Cơ chế này cho phép mô hình bỏ qua các thành phần không cần thiết, đặc biệt hữu ích khi xử lý nhiều loại đầu vào với mức độ phù hợp khác nhau.
+
+\subsection{Variable Selection Networks (VSN)}
+\label{subsec:vsn}
+
+\textbf{Variable Selection Networks (VSN)} là thành phần cho phép TFT tự động lựa chọn các biến đầu vào phù hợp nhất tại mỗi bước thời gian. Đây là cơ chế then chốt cho khả năng diễn giải của TFT.
+
+\textbf{Biến đổi đặc trưng:} Mỗi biến đầu vào $\mathbf{x}^{(j)}_t$ (scalar hoặc categorical) được biến đổi qua embedding:
+\begin{equation}
+    \boldsymbol{\xi}^{(j)}_t = \text{Linear}(\mathbf{x}^{(j)}_t) \quad \text{hoặc} \quad \boldsymbol{\xi}^{(j)}_t = \text{Embedding}(\mathbf{x}^{(j)}_t).
+    \label{eq:var_embedding}
+\end{equation}
+
+\textbf{Tính trọng số lựa chọn biến:} Véc-tơ trọng số softmax được tính bởi một GRN:
+\begin{equation}
+    \mathbf{v}^{(\chi)}_t = \text{Softmax}\!\left(\text{GRN}_v\!\left([\boldsymbol{\xi}^{(1)}_t; \cdots; \boldsymbol{\xi}^{(m_\chi)}_t], \mathbf{c}_s\right)\right),
+    \label{eq:vsn_weights}
+\end{equation}
+trong đó $\mathbf{c}_s$ là véc-tơ ngữ cảnh từ đặc trưng tĩnh, và $m_\chi$ là số lượng biến.
+
+\textbf{Tổng hợp đặc trưng đã lựa chọn:}
+\begin{equation}
+    \tilde{\boldsymbol{\xi}}^{(\chi)}_t = \sum_{j=1}^{m_\chi} v^{(\chi,j)}_t \cdot \tilde{\boldsymbol{\xi}}^{(j)}_t,
+    \label{eq:vsn_aggregate}
+\end{equation}
+trong đó $\tilde{\boldsymbol{\xi}}^{(j)}_t = \text{GRN}^{(j)}(\boldsymbol{\xi}^{(j)}_t)$ là biểu diễn đã xử lý của biến thứ $j$.
+
+Trọng số $\mathbf{v}^{(\chi)}_t$ có thể được trực quan hóa để xác định các biến ngoại sinh quan trọng nhất tại từng bước thời gian -- đây là một trong những nguồn diễn giải chính của TFT.
+
+\subsection{Static Covariate Encoders}
+\label{subsec:static_enc}
+
+Không giống các Transformer chuẩn, TFT có cơ chế chuyên biệt để đưa thông tin tĩnh vào mọi tầng của mô hình. Các đặc trưng tĩnh được mã hóa thành bốn véc-tơ ngữ cảnh:
+\begin{align}
+    \mathbf{c}_s &= \text{GRN}_{c_s}(\mathbf{e}_s) \quad &&\text{(ngữ cảnh lựa chọn biến)} \notag \\
+    \mathbf{c}_e &= \text{GRN}_{c_e}(\mathbf{e}_s) \quad &&\text{(ngữ cảnh trạng thái ẩn LSTM encoder)} \notag \\
+    \mathbf{c}_h &= \text{GRN}_{c_h}(\mathbf{e}_s) \quad &&\text{(ngữ cảnh cell state LSTM encoder)} \notag \\
+    \mathbf{c}_c &= \text{GRN}_{c_c}(\mathbf{e}_s) \quad &&\text{(ngữ cảnh enrichment sau LSTM)} \notag
+\end{align}
+trong đó $\mathbf{e}_s = \sum_j v^{(s,j)} \cdot \text{Embedding}(s^{(j)})$ là biểu diễn tổng hợp của tất cả đặc trưng tĩnh.
+
+\subsection{Sequence-to-Sequence Encoder-Decoder (LSTM)}
+\label{subsec:tft_lstm}
+
+Sau khi lựa chọn và tổng hợp đặc trưng, TFT sử dụng lớp LSTM để học các đặc trưng cục bộ và ngắn hạn:
+
+\textbf{Encoder (xử lý quá khứ):}
+\begin{equation}
+    [\mathbf{h}^{(\text{enc})}_t, \mathbf{c}^{(\text{enc})}_t] = \text{LSTM}_{\text{enc}}(\tilde{\boldsymbol{\xi}}^{(\text{obs})}_t, [\mathbf{h}^{(\text{enc})}_{t-1}, \mathbf{c}^{(\text{enc})}_{t-1}]),
+    \label{eq:tft_encoder}
+\end{equation}
+khởi tạo bằng $\mathbf{h}^{(\text{enc})}_0 = \mathbf{c}_h$ và $\mathbf{c}^{(\text{enc})}_0 = \mathbf{c}_e$.
+
+\textbf{Decoder (xử lý tương lai đã biết):}
+\begin{equation}
+    [\mathbf{h}^{(\text{dec})}_t, \mathbf{c}^{(\text{dec})}_t] = \text{LSTM}_{\text{dec}}(\tilde{\boldsymbol{\xi}}^{(\text{future})}_t, [\mathbf{h}^{(\text{dec})}_{t-1}, \mathbf{c}^{(\text{dec})}_{t-1}]),
+    \label{eq:tft_decoder}
+\end{equation}
+
+Đầu ra của LSTM encoder-decoder được bổ sung kết nối tắt (skip connection) và cổng GLU để ổn định gradient:
+\begin{equation}
+    \boldsymbol{\phi}(t) = \text{LayerNorm}\!\left(\tilde{\boldsymbol{\xi}}_t + \text{GLU}_\phi(\mathbf{h}_t)\right).
+    \label{eq:lstm_gate}
+\end{equation}
+
+\subsection{Static Enrichment Layer}
+\label{subsec:static_enrich}
+
+Trước khi đưa vào cơ chế self-attention, biểu diễn thời gian được làm giàu thêm thông tin tĩnh qua một GRN:
+\begin{equation}
+    \boldsymbol{\theta}(t) = \text{GRN}_{\text{enrich}}(\boldsymbol{\phi}(t), \mathbf{c}_c),
+    \label{eq:static_enrich}
+\end{equation}
+đảm bảo rằng cơ chế attention có thể học sự phụ thuộc điều kiện vào các đặc trưng thực thể tĩnh.
+
+\subsection{Interpretable Multi-Head Self-Attention}
+\label{subsec:attention}
+
+\subsubsection{Cơ chế Scaled Dot-Product Attention}
+
+Kiến trúc Transformer gốc \citep{vaswani2017attention} sử dụng cơ chế \textit{Scaled Dot-Product Attention}:
+\begin{equation}
+    \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{Softmax}\!\left(\frac{\mathbf{Q}\mathbf{K}^\top}{\sqrt{d_k}}\right)\mathbf{V},
+    \label{eq:attention}
+\end{equation}
+trong đó $\mathbf{Q} \in \mathbb{R}^{n \times d_k}$ là ma trận truy vấn (query), $\mathbf{K} \in \mathbb{R}^{m \times d_k}$ là ma trận khóa (key), $\mathbf{V} \in \mathbb{R}^{m \times d_v}$ là ma trận giá trị (value), và $\sqrt{d_k}$ là hệ số tỷ lệ để ổn định gradient.
+
+Cơ chế multi-head attention kết hợp $H_{\text{head}}$ đầu attention song song:
+\begin{equation}
+    \text{MultiHead}(\mathbf{Q},\mathbf{K},\mathbf{V}) = \text{Concat}(\text{head}_1, \ldots, \text{head}_{H_{\text{head}}})\mathbf{W}^O,
+    \label{eq:multihead}
+\end{equation}
+\begin{equation}
+    \text{head}_h = \text{Attention}(\mathbf{Q}\mathbf{W}^Q_h, \mathbf{K}\mathbf{W}^K_h, \mathbf{V}\mathbf{W}^V_h).
+    \label{eq:head_h}
+\end{equation}
+
+\subsubsection{Biến thể Interpretable Multi-Head Attention trong TFT}
+
+TFT đề xuất biến thể attention diễn giải được bằng cách chia sẻ ma trận \textbf{Value} $\mathbf{V}$ giữa tất cả các đầu:
+\begin{equation}
+    \tilde{\mathbf{H}} = \frac{1}{H_{\text{head}}} \sum_{h=1}^{H_{\text{head}}} \text{Softmax}\!\left(\frac{\mathbf{Q}\mathbf{W}^Q_h (\mathbf{K}\mathbf{W}^K_h)^\top}{\sqrt{d_{\text{attn}}}}\right) \mathbf{V} \mathbf{W}_V,
+    \label{eq:interp_attn_detail}
+\end{equation}
+trong đó $\mathbf{W}_V$ là ma trận Value được chia sẻ chung, $\mathbf{W}^Q_h, \mathbf{W}^K_h$ là các ma trận Query và Key riêng biệt cho từng đầu $h$.
+
+\textbf{Ý nghĩa của thiết kế này}: Khi các đầu attention chia sẻ cùng một không gian Value, ma trận attention trung bình:
+\begin{equation}
+    \bar{\mathbf{A}} = \frac{1}{H_{\text{head}}} \sum_{h=1}^{H_{\text{head}}} \mathbf{A}_h, \quad \mathbf{A}_h = \text{Softmax}\!\left(\frac{\mathbf{Q}\mathbf{W}^Q_h (\mathbf{K}\mathbf{W}^K_h)^\top}{\sqrt{d_{\text{attn}}}}\right)
+    \label{eq:avg_attention}
+\end{equation}
+có thể được giải thích trực tiếp như một hàm đo mức độ quan trọng của từng bước thời gian trong quá khứ đối với dự báo tại thời điểm hiện tại \citep{lim2021temporal}.
+
+\subsubsection{Temporal Self-Attention với Causal Masking}
+
+Để đảm bảo tính nhân quả (causality) -- mô hình chỉ được dùng thông tin quá khứ và hiện tại để dự báo tương lai -- TFT sử dụng causal masking:
+\begin{equation}
+    \mathbf{A}_h[t, t'] = \begin{cases} \dfrac{\exp(\mathbf{q}^\top_t \mathbf{k}_{t'}/\sqrt{d_k})}{\sum_{t'' \le t}\exp(\mathbf{q}^\top_t \mathbf{k}_{t''}/\sqrt{d_k})} & \text{nếu } t' \le t \\ 0 & \text{nếu } t' > t \end{cases}.
+    \label{eq:causal_mask}
+\end{equation}
+
+\subsection{Position-wise Feed-Forward và Output Layer}
+\label{subsec:output}
+
+Sau lớp attention, TFT áp dụng lớp feed-forward vị trí với kết nối tắt và chuẩn hóa lớp:
+\begin{equation}
+    \boldsymbol{\delta}(t, \tau) = \text{LayerNorm}\!\left(\boldsymbol{\theta}(t, \tau) + \text{GLU}_{\delta}\!\left(\tilde{\mathbf{H}}(t, \tau)\right)\right).
+    \label{eq:ffn_gate}
+\end{equation}
+
+Lớp đầu ra dự báo phân vị (quantile forecasts) cho phép ước lượng khoảng tin cậy:
+\begin{equation}
+    \hat{y}_\tau(q, t) = \mathbf{W}_q \boldsymbol{\delta}(t, \tau) + b_q, \quad q \in \{0.1, 0.5, 0.9\},
+    \label{eq:quantile_output}
+\end{equation}
+trong đó $\tau$ là bước dự báo $(\tau \in \{1, \ldots, H\})$ và $q$ là phân vị dự báo.
+
+\subsection{Hàm mất mát: Quantile Loss}
+\label{subsec:quantile_loss}
+
+TFT được huấn luyện để tối thiểu hóa tổng hàm mất mát phân vị (quantile loss) trên tất cả các bước dự báo và phân vị:
+\begin{equation}
+    \mathcal{L} = \frac{1}{|\Omega|} \sum_{(y_t,\tau) \in \Omega} \sum_{q \in \mathcal{Q}} \text{QL}(y_{t+\tau}, \hat{y}_\tau(q, t), q),
+    \label{eq:total_loss}
+\end{equation}
+trong đó hàm mất mát phân vị (pinball loss) được định nghĩa:
+\begin{equation}
+    \text{QL}(y, \hat{y}, q) = \max\!\left[q(y - \hat{y}),\, (q-1)(y - \hat{y})\right].
+    \label{eq:quantile_loss}
+\end{equation}
+
+Hàm mất mát này phạt nặng khi giá trị thực vượt quá phân vị dự báo trên (underprediction) với hệ số $q$, và phạt nhẹ hơn khi giá trị thực thấp hơn (overprediction).
+
+\subsection{Khả năng diễn giải của TFT}
+\label{subsec:tft_interpretability}
+
+Một trong những đóng góp quan trọng nhất của TFT là khả năng diễn giải có cấu trúc thông qua ba cơ chế:
+
+\subsubsection{Mức độ quan trọng của biến (Variable Importance)}
+
+Trọng số softmax từ VSN $v^{(\chi,j)}_t$ (Phương trình~\ref{eq:vsn_weights}) có thể được tổng hợp trên toàn bộ tập dữ liệu để ước lượng mức độ quan trọng trung bình của từng biến:
+\begin{equation}
+    \bar{v}^{(\chi,j)} = \frac{1}{|\Omega|} \sum_{(t,\tau) \in \Omega} v^{(\chi,j)}_t.
+    \label{eq:var_importance}
+\end{equation}
+
+Điều này cho phép xác định các yếu tố ngoại sinh (giá, ngày lễ, khuyến mãi) có ảnh hưởng lớn nhất đến dự báo mà không cần công cụ giải thích bên ngoài như SHAP \citep{lundberg2017unified}.
+
+\subsubsection{Tầm quan trọng thời gian (Temporal Importance)}
+
+Ma trận attention trung bình $\bar{\mathbf{A}}$ (Phương trình~\ref{eq:avg_attention}) cho biết bước thời gian quá khứ nào trong cửa sổ nhìn lại (lookback window) quan trọng nhất cho dự báo tại thời điểm hiện tại. Các đỉnh (peaks) trong biểu đồ attention thường tương ứng với các sự kiện đặc biệt như ngày lễ hoặc chu kỳ mùa vụ.
+
+\subsubsection{Chế độ theo mùa vụ (Seasonal Regimes)}
+
+Bằng cách phân tích trọng số attention theo thời điểm trong năm, TFT có thể tiết lộ các chế độ thời gian (temporal regimes) tương ứng với các mùa bán hàng khác nhau trong bán lẻ.
+
+% ============================================================
+\section{Phân tích khả năng diễn giải và tầm quan trọng của yếu tố ngoại sinh}
+\label{sec:interpretability}
+
+\subsection{Tầm quan trọng của biến ngoại sinh trong dự báo bán lẻ}
+\label{subsec:ngoai_sinh}
+
+Trong dự báo nhu cầu bán lẻ, các yếu tố ngoại sinh (exogenous factors) đóng vai trò quyết định bên cạnh lịch sử bán hàng. Các nghiên cứu \citep{syntetos2005accuracy,lim2021temporal} xác nhận rằng các nhóm biến sau có ảnh hưởng lớn:
+
+\begin{enumerate}
+    \item \textbf{Biến giá (Price variables)}: Giá bán lẻ thực tế, mức chiết khấu, momentum giá -- phản ánh độ co giãn giá (price elasticity) của nhu cầu;
+    \item \textbf{Biến sự kiện (Event variables)}: Ngày lễ quốc gia, sự kiện thể thao, lễ hội tôn giáo -- tạo ra các đột biến nhu cầu có thể dự đoán;
+    \item \textbf{Biến lịch (Calendar variables)}: Ngày trong tuần, tuần trong năm, tháng, quý -- phản ánh tính mùa vụ;
+    \item \textbf{Biến danh mục (Category variables)}: Ngành hàng (food, hobbies, household), cửa hàng, tiểu bang -- phản ánh sự khác biệt giữa các thực thể.
+\end{enumerate}
+
+\subsection{Phương pháp phân tích attention weights}
+\label{subsec:attention_analysis}
+
+Trong TFT, mức độ quan trọng của yếu tố ngoại sinh được phân tích theo hai cách:
+
+\textbf{Phân tích VSN (Variable Selection):}
+Trọng số $\bar{v}^{(\chi,j)}$ từ Phương trình~\ref{eq:var_importance} được trực quan hóa bằng biểu đồ cột (bar chart), so sánh mức độ đóng góp trung bình của từng biến vào dự báo. Các biến có trọng số cao được mô hình coi là quan trọng nhất.
+
+\textbf{Phân tích Attention Temporal:}
+Ma trận $\bar{\mathbf{A}}$ được tổng hợp theo thực thể (SKU, cửa hàng) để tạo ra bản đồ nhiệt (heatmap) thể hiện tầm quan trọng của các khoảng thời gian khác nhau trong quá khứ. Điều này giúp xác định chu kỳ lag quan trọng (ví dụ: lag-7 trong mùa vụ tuần).
+
+\textbf{So sánh với SHAP:}
+Trong khi TFT cung cấp attention-based interpretability nội tại, SHAP (SHapley Additive exPlanations) \citep{lundberg2017unified} là phương pháp mô hình bất khả tri (model-agnostic) phổ biến hơn. So sánh giữa hai phương pháp giúp xác nhận tính nhất quán của diễn giải.
+
+% ============================================================
+\section{Các chỉ số đánh giá hiệu suất}
+\label{sec:chi_so_danh_gia}
+
+\subsection{Tổng quan về đánh giá mô hình dự báo}
+\label{subsec:danh_gia_tong_quan}
+
+Việc lựa chọn chỉ số đánh giá phù hợp là quan trọng vì không có chỉ số nào hoàn hảo cho mọi ngữ cảnh \citep{hyndman2006another}. Đặc biệt trong bài toán bán lẻ với dữ liệu gián đoạn (intermittent demand), các chỉ số dựa trên phần trăm (như MAPE) có thể bị sai lệch nghiêm trọng khi giá trị thực gần bằng 0.
+
+\subsection{Root Mean Squared Error (RMSE)}
+\label{subsec:rmse}
+
+RMSE là chỉ số đánh giá độ sai lệch tuyệt đối, nhấn mạnh vào các sai lệch lớn do hàm bình phương:
+\begin{equation}
+    \text{RMSE} = \sqrt{\frac{1}{n}\sum_{t=1}^{n}(y_t - \hat{y}_t)^2}.
+    \label{eq:rmse}
+\end{equation}
+
+\textbf{Đặc điểm}: Nhạy cảm với các outliers, cùng đơn vị với biến mục tiêu sau khi khai căn bậc hai, phù hợp khi sai lệch lớn cần được phạt nặng.
+
+\subsection{Mean Absolute Error (MAE)}
+\label{subsec:mae}
+
+MAE đo sai lệch tuyệt đối trung bình, ít nhạy cảm hơn RMSE với các outliers:
+\begin{equation}
+    \text{MAE} = \frac{1}{n}\sum_{t=1}^{n}|y_t - \hat{y}_t|.
+    \label{eq:mae}
+\end{equation}
+
+\textbf{Đặc điểm}: Dễ giải thích, nhưng không phân biệt được mức độ sai lệch giữa các chuỗi có biên độ khác nhau.
+
+\subsection{Mean Absolute Percentage Error (MAPE)}
+\label{subsec:mape}
+
+MAPE chuẩn hóa sai lệch theo giá trị thực, cho phép so sánh giữa các chuỗi có biên độ khác nhau:
+\begin{equation}
+    \text{MAPE} = \frac{100\%}{n}\sum_{t=1}^{n}\left|\frac{y_t - \hat{y}_t}{y_t}\right|.
+    \label{eq:mape}
+\end{equation}
+
+\textbf{Hạn chế quan trọng}: MAPE không xác định khi $y_t = 0$ và bị lệch (asymmetric) -- sai lệch âm bị phạt nhẹ hơn sai lệch dương \citep{hyndman2006another}. Đây là vấn đề nghiêm trọng trong dữ liệu bán lẻ có nhu cầu gián đoạn.
+
+\subsection{Weighted Mean Absolute Percentage Error (WMAPE)}
+\label{subsec:wmape}
+
+WMAPE khắc phục nhược điểm của MAPE bằng cách chuẩn hóa theo tổng giá trị thực, trở thành chỉ số ưa thích trong thực tế kinh doanh:
+\begin{equation}
+    \text{WMAPE} = \frac{\sum_{t=1}^{n}|y_t - \hat{y}_t|}{\sum_{t=1}^{n}y_t} = \frac{\text{MAE}}{\bar{y}},
+    \label{eq:wmape}
+\end{equation}
+trong đó $\bar{y} = \frac{1}{n}\sum_{t=1}^{n} y_t$ là trung bình giá trị thực.
+
+\textbf{Ưu điểm}: Tránh được vấn đề chia cho 0 khi $y_t = 0$; tự nhiên cân bằng tầm quan trọng theo khối lượng -- các sản phẩm doanh số cao được trọng số lớn hơn, phù hợp với quan điểm kinh doanh.
+
+\subsection{Đánh giá phân cấp (Hierarchical Evaluation)}
+\label{subsec:hieu_suat_phan_cap}
+
+Dữ liệu bán lẻ có cấu trúc phân cấp (hierarchical structure) tự nhiên. Trong bộ dữ liệu M5 (Walmart), cấu trúc phân cấp bao gồm \citep{makridakis2022m5}:
+
+\begin{itemize}
+    \item \textbf{Level 12 -- SKU $\times$ Cửa hàng}: Cấp độ chi tiết nhất, dự báo cho từng sản phẩm tại từng cửa hàng cụ thể;
+    \item \textbf{Level 9 -- SKU $\times$ Tiểu bang}: Tổng hợp theo địa lý;
+    \item \textbf{Level 3 -- Cửa hàng}: Tổng doanh số toàn bộ sản phẩm tại một cửa hàng;
+    \item \textbf{Level 1 -- Quốc gia}: Tổng doanh số toàn bộ thị trường.
+\end{itemize}
+
+Đánh giá tại nhiều cấp độ là cần thiết vì:
+\begin{enumerate}
+    \item Hiệu suất tại cấp SKU quan trọng cho quyết định bổ sung hàng (replenishment);
+    \item Hiệu suất tại cấp cửa hàng quan trọng cho lập kế hoạch vận hành;
+    \item Hiệu ứng tổng hợp (aggregation effect) thường cải thiện độ chính xác khi đi lên cấp cao hơn.
+\end{enumerate}
+
+Bảng~\ref{tab:chi_so_tom_tat} tóm tắt các chỉ số đánh giá và phạm vi áp dụng:
+
+\begin{table}[htbp]
+\centering
+\caption{Tóm tắt các chỉ số đánh giá hiệu suất dự báo}
+\label{tab:chi_so_tom_tat}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Chỉ số} & \textbf{Đơn vị} & \textbf{Phạt outlier} & \textbf{Xử lý zero} & \textbf{Áp dụng} \\
+\hline
+RMSE  & Gốc & Cao  & Tốt & Tất cả cấp \\
+MAE   & Gốc & Thấp & Tốt & Tất cả cấp \\
+MAPE  & \%  & Thấp & Kém & Cấp tổng hợp \\
+WMAPE & \%  & Thấp & Tốt & Tất cả cấp \\
+\hline
+\end{tabular}
+\begin{flushleft}
+\footnotesize \textit{Ghi chú}: Sai số $e_t = y_t - \hat{y}_t$.
+\end{flushleft}
+\end{table}
+
+% ============================================================
+\section{So sánh tổng quan các phương pháp}
+\label{sec:so_sanh}
+
+Bảng~\ref{tab:so_sanh_mo_hinh} tổng hợp so sánh bốn phương pháp được sử dụng trong nghiên cứu này theo các tiêu chí quan trọng:
+
+\begin{table}[htbp]
+\centering
+\caption{So sánh các phương pháp dự báo chuỗi thời gian}
+\label{tab:so_sanh_mo_hinh}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\hline
+\textbf{Tiêu chí}              & \textbf{ARIMA}   & \textbf{Prophet} & \textbf{LSTM}    & \textbf{TFT}     \\
+\hline
+Xử lý phi tuyến               & Không            & Có (giới hạn)    & Tốt              & Rất tốt          \\
+Tính mùa vụ phức tạp          & Có (SARIMA)      & Tốt              & Tốt              & Rất tốt          \\
+Kết hợp biến ngoại sinh       & Giới hạn         & Có (ngày lễ)     & Tốt              & Rất tốt          \\
+Dự báo đa bước                & Tốt              & Tốt              & Tốt              & Rất tốt          \\
+Khả năng diễn giải            & Rất tốt          & Tốt              & Kém              & Tốt              \\
+Xử lý nhu cầu gián đoạn       & Kém              & Trung bình       & Trung bình       & Tốt              \\
+Huấn luyện nhiều SKU song song & Kém             & Trung bình       & Tốt              & Rất tốt          \\
+Yêu cầu tính toán             & Thấp             & Thấp             & Cao              & Cao              \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+% ============================================================
+\section{Tóm tắt chương}
+\label{sec:tom_tat_chuong2}
+
+Chương này đã trình bày nền tảng lý thuyết toàn diện cho nghiên cứu, bao gồm:
+
+\begin{enumerate}
+    \item \textbf{Lý thuyết chuỗi thời gian}: Định nghĩa, phân loại, thành phần và các kỹ thuật tiền xử lý bao gồm xử lý tính mùa vụ, dữ liệu thiếu, và xây dựng đặc trưng.
+
+    \item \textbf{Mô hình baseline}:
+    \begin{itemize}
+        \item ARIMA -- phương pháp thống kê cổ điển Box-Jenkins cho chuỗi tuyến tính;
+        \item Prophet -- mô hình cộng với suy luận Bayes cho dữ liệu kinh doanh;
+        \item LSTM -- mạng nơ-ron hồi tiếp với cơ chế gating để học phụ thuộc dài hạn.
+    \end{itemize}
+
+    \item \textbf{Temporal Fusion Transformer (TFT)}: Kiến trúc tích hợp VSN, GRN, LSTM encoder-decoder và interpretable multi-head attention, cho phép dự báo đa bước chính xác với khả năng giải thích qua attention weights và variable selection.
+
+    \item \textbf{Phân tích diễn giải}: Phương pháp phân tích attention weights và variable selection weights để xác định tầm quan trọng của các yếu tố ngoại sinh.
+
+    \item \textbf{Chỉ số đánh giá}: RMSE, MAE, MAPE và WMAPE được phân tích tại nhiều cấp độ phân cấp (SKU-level và store-level) phù hợp với bài toán bán lẻ đa cấp.
+\end{enumerate}
+
+Nền tảng lý thuyết này tạo cơ sở vững chắc cho việc thiết kế thực nghiệm và phân tích kết quả trong các chương tiếp theo.

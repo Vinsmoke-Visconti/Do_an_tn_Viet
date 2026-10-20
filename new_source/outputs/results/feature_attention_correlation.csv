@@ -1,0 +1,11 @@
+﻿Feature,Attn_Correlation
+sin_month,-0.8921
+cos_month,0.7992
+days_to_next_event,0.5269
+sell_price,0.2714
+price_discount,-0.2714
+has_event,-0.1171
+event_count,-0.1171
+snap_CA,0.0913
+cos_wday,-0.0648
+sin_wday,0.0189
