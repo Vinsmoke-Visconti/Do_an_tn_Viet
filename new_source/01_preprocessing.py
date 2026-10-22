@@ -1,16 +1,20 @@
 """
 Script: 01_preprocessing.py
-Mục đích: Bước 1 — Tiền xử lý dữ liệu M5 và lưu ra Parquet.
+Mục đích: Bước 1 — Tiền xử lý dữ liệu M5 FULL (30,490 SKU) và lưu ra Parquet.
 
 Chạy lệnh:
     python 01_preprocessing.py
 
 Kết quả:
-    data/processed/m5_sku_level_features.parquet
+    data/processed/m5_sku_level_features.parquet  (~12.6M rows, ~1.5–3 GB)
     data/processed/m5_store_level_features.parquet
+
+Lưu ý:
+    Dataset đầy đủ cần ~4–8 GB RAM. Script dùng memory_optimizer nội bộ.
+    Nếu hết RAM, hãy tăng start_day (ví dụ 1700) hoặc dùng items_subset.
 """
 
-import os, sys
+import os, sys, gc, time
 import numpy as np
 import pandas as pd
 
@@ -21,105 +25,121 @@ sys.path.insert(0, BASE_DIR)
 from src.data.m5_pipeline import M5DataPipeline
 
 
-# ─────────────────────────────────────────────
-# Sinh Mock Data nếu chưa có file raw
-# ─────────────────────────────────────────────
-def generate_mock_if_missing(raw_dir: str):
+# ─────────────────────────────────────────────────────────────
+# Kiểm tra dataset thật – KHÔNG sinh mock data
+# ─────────────────────────────────────────────────────────────
+def check_and_report_dataset(raw_dir: str) -> int:
+    """
+    Kiểm tra sự tồn tại của 3 file M5 thật và báo cáo kích thước.
+    Raise FileNotFoundError nếu thiếu bất kỳ file nào.
+    Trả về số lượng chuỗi SKU trong dataset.
+    """
     cal_f   = os.path.join(raw_dir, "calendar.csv")
     price_f = os.path.join(raw_dir, "sell_prices.csv")
     sales_f = os.path.join(raw_dir, "sales_train_validation.csv")
 
-    if os.path.exists(cal_f) and os.path.exists(price_f) and os.path.exists(sales_f):
-        return  # Đã có — không cần tạo mock
+    print("\n[*] Kiểm tra dataset M5 tại:", raw_dir)
+    missing = []
+    for name, path in [
+        ("calendar.csv",                 cal_f),
+        ("sell_prices.csv",              price_f),
+        ("sales_train_validation.csv",   sales_f),
+    ]:
+        if not os.path.exists(path):
+            missing.append(name)
+            print(f"  [✗] {name:45s} — THIẾU!")
+        else:
+            size_mb = os.path.getsize(path) / 1024**2
+            print(f"  [✓] {name:45s} ({size_mb:>7.1f} MB)")
 
-    print("[!] Không tìm thấy dữ liệu raw. Đang tạo MOCK DATA nhỏ để test pipeline ...")
-    os.makedirs(raw_dir, exist_ok=True)
+    if missing:
+        raise FileNotFoundError(
+            f"\n[ERROR] Thiếu {len(missing)} file dữ liệu thật trong:\n  {raw_dir}\n"
+            + "\n".join(f"  - {f}" for f in missing)
+            + "\n\nHãy download M5 dataset từ Kaggle (m5-forecasting-accuracy)\n"
+            + "và đặt vào thư mục data/raw/."
+        )
 
-    # --- Calendar (1913 ngày) ---
-    dates = pd.date_range("2011-01-29", periods=1913, freq="D")
-    rng   = np.random.default_rng(42)
-    cal_df = pd.DataFrame({
-        "date":         dates,
-        "wm_yr_wk":     11101 + (np.arange(1913) // 7),
-        "weekday":      dates.day_name(),
-        "wday":         (dates.dayofweek + 2) % 7 + 1,
-        "month":        dates.month,
-        "year":         dates.year,
-        "d":            [f"d_{i+1}" for i in range(1913)],
-        "event_name_1": rng.choice(["SuperBowl", "Easter", "Christmas", np.nan],
-                                   size=1913, p=[0.01, 0.01, 0.01, 0.97]),
-        "event_type_1": rng.choice(["Sporting", "Religious", "Cultural", np.nan],
-                                   size=1913, p=[0.01, 0.01, 0.01, 0.97]),
-        "event_name_2": [np.nan] * 1913,
-        "event_type_2": [np.nan] * 1913,
-        "snap_CA": rng.integers(0, 2, size=1913),
-        "snap_TX": rng.integers(0, 2, size=1913),
-        "snap_WI": rng.integers(0, 2, size=1913),
-    })
-    cal_df.to_csv(cal_f, index=False)
-
-    # --- Sales (100 series: 50 items × 2 stores) ---
-    num_items, stores = 50, ["CA_1", "TX_1"]
-    item_ids = [f"FOODS_3_{i:03d}" for i in range(1, num_items + 1)]
-    rows = []
-    for store in stores:
-        state = store.split("_")[0]
-        for item in item_ids:
-            lam = rng.uniform(0.3, 5.0)
-            row = {
-                "id": f"{item}_{store}_validation",
-                "item_id": item, "dept_id": "FOODS_3",
-                "cat_id": "FOODS", "store_id": store, "state_id": state
-            }
-            sales_series = rng.poisson(lam=lam, size=1913)
-            for di in range(1, 1914):
-                row[f"d_{di}"] = int(sales_series[di - 1])
-            rows.append(row)
-    pd.DataFrame(rows).to_csv(sales_f, index=False)
-
-    # --- Prices ---
-    wm_weeks = cal_df["wm_yr_wk"].unique()
-    pr = []
-    for store in stores:
-        for item in item_ids:
-            base = rng.uniform(1.5, 12.0)
-            for wk in wm_weeks:
-                pr.append({"store_id": store, "item_id": item, "wm_yr_wk": int(wk),
-                           "sell_price": round(base * rng.uniform(0.85, 1.05), 2)})
-    pd.DataFrame(pr).to_csv(price_f, index=False)
-    print("[✓] Mock data đã tạo xong!")
+    # Đếm số dòng sales mà không load hết vào RAM
+    with open(sales_f, "r", encoding="utf-8") as fh:
+        n_series = sum(1 for _ in fh) - 1  # trừ header
+    print(f"  [i] Tổng SKU series: {n_series:,}")
+    return n_series
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # MAIN
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 def main():
+    t0 = time.time()
     print("=" * 70)
-    print("  BƯỚC 1: TIỀN XỬ LÝ DỮ LIỆU M5 (TOP-1 PIPELINE)")
+    print("  BƯỚC 1: TIỀN XỬ LÝ DỮ LIỆU M5 FULL DATASET")
+    print("  (Áp dụng với toàn bộ 30,490 chuỗi SKU × 414 ngày cuối)")
     print("=" * 70)
 
     raw_dir       = os.path.join(BASE_DIR, "data", "raw")
     processed_dir = os.path.join(BASE_DIR, "data", "processed")
+    os.makedirs(processed_dir, exist_ok=True)
 
-    generate_mock_if_missing(raw_dir)
+    # Xác nhận dataset thật tồn tại (KHÔNG tạo mock)
+    n_series = check_and_report_dataset(raw_dir)
+
+    # ----------------------------------------------------------
+    # Thông số: lấy 414 ngày cuối (d_1500 → d_1913)
+    # ≈ 30,490 SKU × 414 ngày = ~12.6 triệu dòng
+    # Tăng start_day lên nếu gặp lỗi OOM (Out of Memory)
+    # ----------------------------------------------------------
+    START_DAY = 1500
+    END_DAY   = 1913
+
+    print(f"\n[i] Sẽ xử lý ngày d_{START_DAY} → d_{END_DAY} "
+          f"({END_DAY - START_DAY + 1} ngày × {n_series:,} SKU "
+          f"= ~{(END_DAY - START_DAY + 1) * n_series / 1e6:.1f}M dòng)")
 
     pipeline = M5DataPipeline(data_dir=raw_dir)
 
-    # SKU-Level (Level 12) — lấy từ ngày 1500 để giảm RAM
-    print("\n--- SKU-LEVEL (LEVEL 12) ---")
-    sku_df = pipeline.create_sku_level_data(start_day=1500, end_day=1913)
-    pipeline.save_processed_data(sku_df, "m5_sku_level_features.parquet", output_dir=processed_dir)
+    # ==================================================
+    # SKU-Level (Level 12 — toàn bộ series)
+    # ==================================================
+    print("\n" + "─" * 60)
+    print("  SKU-LEVEL (Level 12) — Toàn bộ 30,490 chuỗi")
+    print("─" * 60)
+    t1 = time.time()
 
-    # Store-Level (Level 3)
-    print("\n--- STORE-LEVEL (LEVEL 3) ---")
+    sku_df = pipeline.create_sku_level_data(
+        start_day=START_DAY,
+        end_day=END_DAY,
+        items_subset=None   # None = xử lý TẤT CẢ series
+    )
+    pipeline.save_processed_data(
+        sku_df, "m5_sku_level_features.parquet", output_dir=processed_dir
+    )
+    t2 = time.time()
+    print(f"  ↳ Thời gian xử lý SKU-level: {(t2 - t1) / 60:.1f} phút")
+
+    # ==================================================
+    # Store-Level (Level 3 — tổng hợp theo cửa hàng)
+    # ==================================================
+    print("\n" + "─" * 60)
+    print("  STORE-LEVEL (Level 3)")
+    print("─" * 60)
     store_df = pipeline.create_store_level_data(sku_df)
-    pipeline.save_processed_data(store_df, "m5_store_level_features.parquet", output_dir=processed_dir)
+    pipeline.save_processed_data(
+        store_df, "m5_store_level_features.parquet", output_dir=processed_dir
+    )
 
+    # Giải phóng bộ nhớ
+    del sku_df, store_df
+    gc.collect()
+
+    elapsed = time.time() - t0
     print("\n" + "=" * 70)
     print("  BƯỚC 1 HOÀN TẤT!")
-    print(f"  SKU-level  : {sku_df.shape[0]:,} rows × {sku_df.shape[1]} features")
-    print(f"  Store-level: {store_df.shape[0]:,} rows × {store_df.shape[1]} features")
-    print(f"  Lưu tại    : {processed_dir}")
+    sku_path   = os.path.join(processed_dir, "m5_sku_level_features.parquet")
+    store_path = os.path.join(processed_dir, "m5_store_level_features.parquet")
+    print(f"  SKU-level  : {os.path.getsize(sku_path)   / 1024**2:>7.1f} MB  →  {sku_path}")
+    print(f"  Store-level: {os.path.getsize(store_path) / 1024**2:>7.1f} MB  →  {store_path}")
+    print(f"  Tổng thời gian: {elapsed / 60:.1f} phút")
     print("=" * 70)
 
 

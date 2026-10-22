@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Datasets (Raw & Processed)
+new_source/data/raw/*.csv
+new_source/data/processed/*.parquet
+*.parquet
+*.csv.zip
+*.csv.gz
+
+# Trained Models
+new_source/outputs/models/*.pkl
+*.pkl
+
+# Logs & temp
+*.log
+.DS_Store

@@ -1,4 +1,4 @@
-import sys, os, warnings
+import sys, os, warnings, time
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -23,31 +23,41 @@ def apply_label_encoder(series, mapping):
 warnings.filterwarnings("ignore")
 sys.stdout.reconfigure(encoding="utf-8")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_PROC = os.path.join(BASE_DIR, "data", "processed")
 OUT_FIG   = os.path.join(BASE_DIR, "outputs", "figures", "attention")
 OUT_RES   = os.path.join(BASE_DIR, "outputs", "results")
 os.makedirs(OUT_FIG, exist_ok=True)
 os.makedirs(OUT_RES, exist_ok=True)
 
-print("="*65)
+print("="*70)
 print("  PHAN TICH DIEN GIAI: ATTENTION WEIGHTS & FEATURE IMPORTANCE")
 print("  Kien truc: Interpretable Multi-Head Attention (TFT)")
-print("="*65)
+print("  Dataset: M5 FULL (30,490 SKU - Walmart Forecasting)")
+print("="*70)
 
-print("\n[1] Load du lieu va chuan bi features...")
+print("\n[1] Load du lieu FULL dataset va chuan bi features...")
+t0 = time.time()
 df = pd.read_parquet(os.path.join(DATA_PROC, "m5_sku_level_features.parquet"))
 df["date"] = pd.to_datetime(df["date"])
 df = df.sort_values(["id","date"]).reset_index(drop=True)
 
-# Fix: chi fillna cac cot so, bo qua categorical
+# chi fillna cac cot so, bo qua categorical
 num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 df[num_cols] = df[num_cols].fillna(0)
 str_cols = df.select_dtypes(include=["object","category"]).columns.tolist()
 for c in str_cols:
     df[c] = df[c].astype(str).fillna("unknown")
 
-print(f"   Data shape: {df.shape}")
+print(f"   Data shape: {df.shape[0]:,} rows x {df.shape[1]} features")
+print(f"   Unique SKUs: {df['id'].nunique():,}")
+if 'cat_id' in df.columns:
+    print(f"   Categories: {df['cat_id'].unique().tolist()}")
+if 'store_id' in df.columns:
+    print(f"   Stores    : {df['store_id'].nunique():,} stores")
+print(f"   Date range: {df['date'].min().date()} -> {df['date'].max().date()}")
+print(f"   Load time : {time.time()-t0:.1f}s")
+
 print(f"   Date range: {df['date'].min()} -> {df['date'].max()}")
 
 EXOGENOUS_KNOWN = {
@@ -76,11 +86,13 @@ print(f"   Exogenous features: {len(available_exo)}")
 print(f"   Endogenous features: {len(available_endo)}")
 
 # =====================================================
-# 2. LIGHTGBM VARIABLE IMPORTANCE
+# 2. LIGHTGBM VARIABLE IMPORTANCE (tren FULL dataset)
 # =====================================================
-print("\n[2] LightGBM Variable Importance (VSN weight proxy)...")
+print("\n[2] LightGBM Variable Importance (VSN weight proxy) - FULL DATA...")
+print(f"   Training on {len(df):,} rows...")
 df_train = df[df["d_num"] <= 1857].copy()
 df_test  = df[df["d_num"] >  1857].copy()
+print(f"   Train: {len(df_train):,} rows | Test: {len(df_test):,} rows")
 
 cat_cols = ["item_id","dept_id","cat_id","store_id","state_id"]
 for col in cat_cols:
@@ -98,16 +110,27 @@ y_test  = df_test["sales"].values.astype(float)
 
 lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_cols)
 lgb_val   = lgb.Dataset(X_test,  y_test,  feature_name=feature_cols)
+
+# Params toi uu cho full M5 dataset (~12 trieu dong)
 params = {
-    "objective":"tweedie","tweedie_variance_power":1.1,
-    "metric":"rmse","learning_rate":0.05,"num_leaves":64,"max_depth":6,
-    "subsample":0.8,"colsample_bytree":0.8,"min_child_samples":20,
-    "verbose":-1,"n_jobs":2
+    "objective":               "tweedie",
+    "tweedie_variance_power":  1.2,    # phu hop data sales (nhieu zero)
+    "metric":                  "rmse",
+    "learning_rate":           0.05,
+    "num_leaves":              127,    # tang so la de hoc pattern phuc tap
+    "max_depth":               -1,
+    "min_child_samples":       200,    # tranh overfitting tren large data
+    "feature_fraction":        0.7,
+    "bagging_fraction":        0.8,
+    "bagging_freq":            5,
+    "n_jobs":                  -1,     # su dung toan bo CPU
+    "verbose":                 -1,
+    "seed":                    42,
 }
-print("   Training LightGBM...")
+print(f"   Training LightGBM tren {len(X_train):,} rows (full M5)...")
 cb = lgb.train(params, lgb_train, valid_sets=[lgb_val],
-               num_boost_round=300,
-               callbacks=[lgb.early_stopping(50,verbose=False), lgb.log_evaluation(-1)])
+               num_boost_round=500,
+               callbacks=[lgb.early_stopping(30, verbose=False), lgb.log_evaluation(100)])
 
 fi_gain  = pd.Series(cb.feature_importance("gain"),  index=feature_cols, name="Gain")
 fi_split = pd.Series(cb.feature_importance("split"), index=feature_cols, name="Split")
@@ -186,10 +209,20 @@ plt.close()
 print("   -> Saved: 01_feature_importance_vsn_style.png")
 
 # =====================================================
-# 4. ATTENTION WEIGHTS (Interpretable MHA Simulation)
+# 4. ATTENTION WEIGHTS - lay mau dai dien tu FULL dataset
 # =====================================================
 print("\n[4] Tinh toan Attention Weights (Interpretable MHA)...")
-sample_id = df["id"].unique()[0]
+# Lay 1 sample dai dien co nhieu event nhat (truong hop thu vi nhat cho attention)
+if "has_event" in df.columns:
+    event_days_per_id = df[df["has_event"] > 0].groupby("id").size()
+    if len(event_days_per_id) > 0:
+        sample_id = event_days_per_id.idxmax()
+        print(f"   Sample co nhieu su kien nhat: {sample_id} ({event_days_per_id.max()} event days)")
+    else:
+        sample_id = df["id"].unique()[0]
+else:
+    sample_id = df["id"].unique()[0]
+
 df_sample = df[df["id"]==sample_id].copy().sort_values("date").tail(120)
 
 exo_key_feats = [f for f in ["sell_price","has_event","snap_CA","sin_month","cos_month",

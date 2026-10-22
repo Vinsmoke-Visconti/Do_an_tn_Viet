@@ -155,11 +155,11 @@ Toàn bộ hệ thống thực nghiệm được thiết kế độc lập, đó
 \begin{enumerate}
     \item \textbf{\texttt{01\_preprocessing.py}} (Data Pipeline):
     \begin{itemize}
-        \item Đọc dữ liệu thô M5 ($30{,}490$ chuỗi thời gian, thu gọn trên 2 siêu thị đại diện CA\_1 và TX\_1 với $41{,}400$ bản ghi).
+        \item Đọc toàn bộ dữ liệu thô M5 ($30{,}490$ chuỗi thời gian, toàn bộ 10 siêu thị trải dài 3 bang CA, TX, WI với hơn $12{,}620{,}000$ bản ghi).
         \item Mã hóa định danh tĩnh (Static IDs: \texttt{store\_id}, \texttt{cat\_id}, \texttt{dept\_id}, \texttt{item\_id}).
         \item Tạo chu kỳ điều hòa lịch: $\sin(2\pi \cdot \text{month}/12)$, $\cos(2\pi \cdot \text{month}/12)$, $\sin(2\pi \cdot \text{wday}/7)$, $\cos(2\pi \cdot \text{wday}/7)$.
-        \item Tạo trễ thời gian chống rò rỉ thông tin (Lookback Lags: 28, 35, 42 ngày) và thống kê trượt (Rolling Means: 7, 28, 90, 365 ngày).
-        \item Tạo biến chính sách giá (\texttt{sell\_price}, \texttt{price\_momentum}) và sự kiện xã hội (\texttt{days\_to\_next\_event}, \texttt{snap\_CA}, \texttt{snap\_TX}).
+        \item Tạo trễ thời gian chống rò rỉ thông tin (Lookback Lags: 28, 35, 42, 56 ngày) và thống kê trượt (Rolling Means: 7, 28, 90 ngày).
+        \item Tạo biến chính sách giá (\texttt{sell\_price}, \texttt{price\_momentum}, \texttt{price\_discount}) và sự kiện xã hội (\texttt{days\_to\_next\_event}, \texttt{snap\_CA}, \texttt{snap\_TX}, \texttt{snap\_WI}).
         \item Xuất dữ liệu đã xử lý sang định dạng tối ưu: \texttt{data/processed/m5\_sku\_level\_features.parquet}.
     \end{itemize}
 
@@ -239,29 +239,29 @@ Bảng~\ref{tab:ssi_results} trình bày kết quả đo lường thực nghiệ
 
 \begin{table}[htbp]
 \centering
-\caption{Chỉ số cường độ mùa vụ (SSI) và xu hướng (TSI) trên 5 cấp độ phân cấp M5}
+\caption{Chỉ số cường độ mùa vụ (SSI) và xu hướng (TSI) trên 5 cấp độ phân cấp M5 (Full Dataset 30,490 SKU)}
 \label{tab:ssi_results}
 \begin{tabular}{lcccccc}
 \toprule
 \textbf{Cấp độ} & \textbf{Đại diện phân cấp} & \textbf{SSI ($F_S$ 7-day)} & \textbf{TSI ($F_T$)} & \textbf{\% Var Seasonal} & \textbf{\% Var Trend} & \textbf{Đánh giá} \\
 \midrule
-\textbf{L1} & Tổng quốc gia (National) & 0.1597 & 0.0876 & 32.38\% & 12.39\% & Yếu / Bị triệt tiêu \\
-\textbf{L2} & Bang California (CA)     & 0.1804 & 0.0865 & 20.48\% & 7.93\%  & Yếu \\
-\textbf{L3} & Siêu thị CA\_1           & 0.1804 & 0.0865 & 20.48\% & 7.93\%  & Yếu \\
-\textbf{L9} & Ngành FOODS tại CA       & 0.1804 & 0.0865 & 20.48\% & 7.93\%  & Yếu \\
-\textbf{L12}& Mặt hàng đơn lẻ (SKU)    & \textbf{0.2272} & \textbf{0.1191} & \textbf{27.78\%} & \textbf{11.35\%} & \textbf{Rõ rệt nhất} \\
+\textbf{L1} & Toàn quốc (National)      & \textbf{0.7523} & 0.4128 & 72.40\% & 12.08\% & Rất mạnh \\
+\textbf{L2} & Bang California (CA)     & \textbf{0.8016} & 0.4057 & 78.16\% & 11.14\% & Rất mạnh \\
+\textbf{L3} & Cửa hàng CA\_1           & \textbf{0.8112} & 0.2813 & 81.19\% & 6.81\%  & Rất mạnh \\
+\textbf{L9} & CA $\times$ FOODS        & \textbf{0.7822} & 0.4902 & 74.03\% & 15.51\% & Rất mạnh \\
+\textbf{L12}& SKU FOODS\_1\_001\_CA\_1 & 0.1334          & 0.0422 & 19.11\% & 11.85\% & Yếu / Gián đoạn \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{defensebox}{Luận điểm bảo vệ then chốt số 2: Tại sao SSI ở L12 lại cao nhất?}
-    Khi Hội đồng hỏi: \textit{"Tại sao khi tổng hợp lên cấp độ toàn quốc (L1), doanh số rất lớn và đều đặn, nhưng chỉ số cường độ mùa vụ tuần (SSI) lại thấp hơn cấp độ mặt hàng đơn lẻ (L12)?"}
+\begin{defensebox}{Luận điểm bảo vệ then chốt số 2: Tại sao SSI ở L1--L9 rất mạnh nhưng L12 lại thấp?}
+    Khi Hội đồng hỏi: \textit{"Tại sao khi tổng hợp lên cấp độ cửa hàng (L3), bang (L2) hay toàn quốc (L1), chỉ số mùa vụ SSI đạt trên 0.75--0.81 (rất mạnh), trong khi ở cấp độ mặt hàng đơn lẻ (L12) SSI lại chỉ đạt 0.1334?"}
     
     \textbf{Câu trả lời chuẩn mực:}
     \begin{enumerate}
-        \item \textbf{Hiện tượng triệt tiêu pha mùa vụ do tổng hợp (Aggregation cancellation):} Ở cấp độ SKU đơn lẻ (L12), hành vi tiêu dùng diễn ra cực kỳ chuẩn xác theo nhịp sinh học tuần: người dân tập trung mua thực phẩm vào thứ Bảy và Chủ nhật, sức mua giảm mạnh vào thứ Hai và thứ Ba. Do đó biên độ dao động tuần chiếm tỉ trọng lớn so với phương sai nội tại của mặt hàng.
-        \item Khi cộng gộp hàng chục ngàn SKU từ nhiều ngành hàng khác nhau (Thực phẩm tươi sống, Đồ gia dụng, Sở thích cá nhân) trên phạm vi toàn quốc (L1), các chu kỳ mua sắm cá biệt có độ lệch pha tự nhiên bù trừ lẫn nhau, đồng thời quy mô nền bán lẻ khổng lồ khiến đồ thị trở nên phẳng hơn, làm loãng cường độ tương đối của chu kỳ tuần.
-        \item Điều này minh chứng rằng: \textbf{Dự báo ở cấp độ chi tiết (L12) bắt buộc phải mô hình hóa mùa vụ chặt chẽ hơn so với dự báo vĩ mô ở cấp độ tổng hợp (L1).}
+        \item \textbf{Hiện tượng khử nhiễu nhờ cộng gộp phân cấp (Aggregation smoothing):} Ở cấp độ SKU đơn lẻ (L12), chuỗi bán lẻ bị chi phối bởi tính gián đoạn (intermittency) với rất nhiều ngày bán được 0 đơn vị (doanh số trung bình chỉ 0.66 sản phẩm/ngày). Do đó phương sai phần dư ngẫu nhiên $\text{Var}(R_t)$ rất lớn so với biên độ mùa vụ, làm chỉ số $F_S$ giảm xuống 0.1334.
+        \item \textbf{Hành vi mua sắm tập thể bộc lộ rõ ở cấp độ vĩ mô:} Khi cộng gộp hàng ngàn SKU lên cấp Store (L3) hoặc State (L2), quy luật số lớn (Law of Large Numbers) triệt tiêu hoàn toàn các biến động ngẫu nhiên của từng cá thể, làm nổi bật nhịp mua sắm tuần cực kỳ ổn định và mạnh mẽ của người tiêu dùng (mua sắm tập trung cuối tuần, giảm vào đầu tuần). Thành phần mùa vụ tuần giải thích tới $72\% - 81\%$ tổng phương sai chuỗi thời gian ở các cấp L1, L2, L3, L9.
+        \item \textbf{Hàm ý mô hình hóa:} Ở các cấp tổng hợp (L1--L3), mô hình có thể dự báo chính xác cao chỉ nhờ khai thác nhịp tuần. Nhưng ở cấp SKU (L12), mô hình bắt buộc phải kết hợp cả phân rã mùa vụ, hàm mất mát Tweedie để giải quyết điểm 0, và cơ chế Attention để phát hiện các yếu tố kích cầu ngoại sinh.
     \end{enumerate}
 \end{defensebox}
 
@@ -431,21 +431,19 @@ Dựa trên dữ liệu thực nghiệm huấn luyện tại \texttt{02\_train\_
 
 \begin{table}[htbp]
 \centering
-\caption{Hệ số tương quan tuyến tính giữa Attention Score và các biến ngoại sinh}
+\caption{Hệ số tương quan tuyến tính giữa Attention Score và các biến ngoại sinh (Full Dataset 30,490 SKU)}
 \label{tab:attn_correlation}
 \begin{tabular}{lcr}
 \toprule
 \textbf{Đặc trưng ngoại sinh} & \textbf{Hệ số tương quan ($r$)} & \textbf{Ý nghĩa diễn giải} \\
 \midrule
-\texttt{sin\_month} & \textbf{-0.8921} & Chu kỳ năm: Trọng số attention dịch chuyển mạnh theo mùa \\
-\texttt{cos\_month} & \textbf{+0.7992} & Chu kỳ năm: Định hướng đỉnh chú ý vào các tháng đầu/cuối năm \\
-\texttt{days\_to\_next\_event} & \textbf{+0.5269} & Khi càng gần sự kiện lễ hội, attention score tăng vọt \\
-\texttt{sell\_price} & \textbf{+0.2714} & Mặt hàng có giá trị cao đòi hỏi mức độ tập trung cao hơn \\
-\texttt{price\_discount} & \textbf{-0.2714} & Đợt giảm giá kích hoạt các đợt chú ý đột biến \\
-\texttt{has\_event} & -0.1171 & Sự kiện diễn ra tạo xung đột biến ngắn hạn \\
-\texttt{snap\_CA} & +0.0913 & Ảnh hưởng trợ cấp SNAP tại California \\
-\texttt{cos\_wday} & -0.0648 & Điều chế chu kỳ tuần \\
-\texttt{sin\_wday} & +0.0189 & Điều chế chu kỳ tuần \\
+\texttt{sin\_month} & \textbf{-0.8928} & Chu kỳ năm: Trọng số attention dịch chuyển mạnh theo mùa \\
+\texttt{cos\_month} & \textbf{+0.7999} & Chu kỳ năm: Định hướng đỉnh chú ý vào các tháng đầu/cuối năm \\
+\texttt{days\_to\_next\_event} & \textbf{-0.3701} & Khi càng gần sự kiện (khoảng cách ngày $\rightarrow 0$), attention score tăng vọt \\
+\texttt{snap\_CA} & \textbf{+0.0626} & Ảnh hưởng trợ cấp SNAP tại California kích hoạt chú ý \\
+\texttt{has\_event} & \textbf{+0.0504} & Ngày có sự kiện tạo xung chú ý tăng cường (tỉ lệ 1.174x) \\
+\texttt{cos\_wday} & -0.0643 & Điều chế chu kỳ tuần \\
+\texttt{sin\_wday} & +0.0197 & Điều chế chu kỳ tuần \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -485,13 +483,13 @@ Dựa trên dữ liệu thực nghiệm huấn luyện tại \texttt{02\_train\_
 \end{figure}
 
 \begin{defensebox}{Luận điểm bảo vệ then chốt số 4: Biến ngoại sinh có thực sự quan trọng không?}
-    Khi Hội đồng hỏi: \textit{"Tại sao tổng hợp Gain của các biến ngoại sinh (Lễ hội, Giá bán, SNAP, Lịch) chỉ chiếm khoảng 13.2\%, trong khi biến nội sinh (Rolling, Lag) chiếm tới gần 83\%? Liệu có nên bỏ biến ngoại sinh để mô hình nhẹ hơn không?"}
+    Khi Hội đồng hỏi: \textit{"Tại sao tổng hợp Gain của các biến ngoại sinh (Giá bán 8.80\%, Lịch 5.68\%, Lễ hội 0.45\%, SNAP 0.19\%) chỉ chiếm khoảng 15.12\%, trong khi biến nội sinh (Rolling 78.83\%, Lag 1.17\%) chiếm tới 80.00\%? Liệu có nên bỏ biến ngoại sinh để mô hình nhẹ hơn không?"}
     
     \textbf{Câu trả lời chuẩn mực:}
     \begin{enumerate}
-        \item \textbf{Bản chất bài toán chuỗi thời gian:} Biến nội sinh (Rolling/Lag) nắm giữ \textbf{mức nền doanh số (baseline level)} và quán tính tiêu dùng, do đó chúng giải thích phần lớn phương sai tĩnh của chuỗi thời gian.
-        \item \textbf{Giá trị biên của biến ngoại sinh (Marginal utility):} Mặc dù chỉ chiếm 13.2\% Gain, nhưng các biến ngoại sinh lại quyết định \textbf{các bước ngoặt và đỉnh đột biến (turning points and spikes)}. Ví dụ: khi có đợt giảm giá mạnh hoặc ngày lễ Super Bowl, các biến Lag/Rolling chỉ phản ánh quá khứ và sẽ dự báo trễ (lagged response), chỉ có biến ngoại sinh (\texttt{price\_discount}, \texttt{days\_to\_next\_event}) mới giúp mô hình chủ động dự báo trước cú nhảy vọt doanh số.
-        \item Hệ số tương quan $r = +0.5269$ với \texttt{days\_to\_next\_event} và $r = 0.7992$ với \texttt{cos\_month} (Bảng~\ref{tab:attn_correlation}) chứng minh rõ ràng: Khi đến gần ngày lễ hoặc thay đổi mùa vụ, cơ chế Attention lập tức dồn trọng số vào các biến ngoại sinh này để điều chỉnh đường dự báo. Do đó, biến ngoại sinh là \textbf{không thể thiếu}.
+        \item \textbf{Bản chất bài toán chuỗi thời gian:} Biến nội sinh (Rolling/Lag) nắm giữ \textbf{mức nền doanh số (baseline level)} và quán tính tiêu dùng, do đó chúng giải thích phần lớn phương sai tĩnh của chuỗi thời gian ($80.00\%$ tổng Gain).
+        \item \textbf{Giá trị biên của biến ngoại sinh (Marginal utility):} Mặc dù chỉ chiếm 15.12\% Gain, nhưng các biến ngoại sinh lại quyết định \textbf{các bước ngoặt và đỉnh đột biến (turning points and spikes)}. Ví dụ: khi có đợt giảm giá mạnh hoặc ngày lễ Super Bowl, các biến Lag/Rolling chỉ phản ánh quá khứ và sẽ dự báo trễ (lagged response), chỉ có biến ngoại sinh (\texttt{sell\_price}, \texttt{days\_to\_next\_event}) mới giúp mô hình chủ động dự báo trước cú nhảy vọt doanh số.
+        \item Hệ số tương quan $r = -0.3701$ với \texttt{days\_to\_next\_event} và $r = +0.7999$ với \texttt{cos\_month} (Bảng~\ref{tab:attn_correlation}), cùng tỉ số chú ý ngày sự kiện đạt \textbf{1.174x} so với ngày thường chứng minh rõ ràng: Khi đến gần ngày lễ hoặc thay đổi mùa vụ, cơ chế Attention lập tức dồn trọng số vào các biến ngoại sinh này để điều chỉnh đường dự báo. Do đó, biến ngoại sinh là \textbf{không thể thiếu}.
     \end{enumerate}
 \end{defensebox}
 
