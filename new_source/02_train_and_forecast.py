@@ -108,12 +108,16 @@ def main():
 
     # 2. Chia tập
     print("\n[2] Chia tập Train / Val / Test ...")
+    hist_df = df[["id", "store_id", "d_num", "sales"]].copy()
+    stores = sorted(df["store_id"].unique())
     train_df, val_df, test_df, feature_cols = prepare_dataset(df)
     cat_in_features = [c for c in CAT_COLS if c in feature_cols]
+    del df
+    import gc
+    gc.collect()
 
     # 3. Huấn luyện per-Store LightGBM
-    print(f"\n[3] Huấn luyện LightGBM cho từng Store ({df['store_id'].nunique()} stores) ...")
-    stores = sorted(df["store_id"].unique())
+    print(f"\n[3] Huấn luyện LightGBM cho từng Store ({len(stores)} stores) ...")
     models = {}
     all_imp_dfs = []
 
@@ -132,7 +136,7 @@ def main():
         mdl = LightGBMTweedie(store_id=store)
         mdl.train(X_tr, y_tr, X_vl, y_vl,
                   categorical_features=cat_in_features,
-                  num_boost_round=1500, early_stopping_rounds=50)
+                  num_boost_round=1000, early_stopping_rounds=40)
         mdl.save(output_dir=MODEL_DIR)
         models[store] = mdl
 
@@ -148,10 +152,10 @@ def main():
         if store not in models:
             continue
         mdl  = models[store]
-        hist = df[df["store_id"] == store].copy()
+        hist = hist_df[hist_df["store_id"] == store].copy()
         fut  = test_df[test_df["store_id"] == store].copy()
 
-        # Dự báo đệ quy cho từng SKU trong cửa hàng
+        # Dự báo đệ quy vector hóa cho toàn bộ SKU trong cửa hàng
         forecaster = RecursiveForecaster(model=mdl, horizon=HORIZON)
         result_df  = forecaster.forecast(
             history_df=hist,

@@ -23,7 +23,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
-from src.utils.metrics             import evaluate_forecast, calc_wmape, calc_rmse
+from src.utils.metrics             import evaluate_forecast, calc_wmape, calc_rmse, calc_mae, calc_smape
 from src.utils.hierarchical_evaluation import evaluate_hierarchical
 from src.utils.visualizer          import plot_model_comparison, plot_28day_forecast
 
@@ -40,17 +40,41 @@ for d in [FIG_DIR, RESULT_DIR, REPORT_DIR]:
 # Đánh giá đa cấp độ
 # ─────────────────────────────────────────────
 def hierarchical_evaluation(forecast_df: pd.DataFrame) -> pd.DataFrame:
-    """Đánh giá 3 cấp độ phân cấp M5."""
-    # SKU-Level (Level 12)
-    sku_true = forecast_df["sales"].values
-    sku_pred = forecast_df["pred_sales"].values
+    """Đánh giá 5 cấp độ phân cấp M5: L12, L9, L3, L2, L1."""
+    def _flat(arr):
+        return np.clip(np.asarray(arr).flatten(), 0, None)
 
-    # Store-Level (Level 3): tổng hợp theo store + ngày
-    store_grp = forecast_df.groupby(["store_id", "d_num"])
-    store_true = store_grp["sales"].sum().values
-    store_pred = store_grp["pred_sales"].sum().values
+    levels = {
+        "Level 12 (SKU)": (forecast_df["sales"].values, forecast_df["pred_sales"].values),
+    }
 
-    return evaluate_hierarchical(sku_true, sku_pred, store_true, store_pred)
+    if "cat_id" in forecast_df.columns and "state_id" in forecast_df.columns:
+        l9 = forecast_df.groupby(["cat_id", "state_id", "d_num"], observed=False)[["sales", "pred_sales"]].sum()
+        levels["Level 9 (Cat x State)"] = (l9["sales"].values, l9["pred_sales"].values)
+
+    if "store_id" in forecast_df.columns:
+        l3 = forecast_df.groupby(["store_id", "d_num"], observed=False)[["sales", "pred_sales"]].sum()
+        levels["Level 3 (Store)"] = (l3["sales"].values, l3["pred_sales"].values)
+
+    if "state_id" in forecast_df.columns:
+        l2 = forecast_df.groupby(["state_id", "d_num"], observed=False)[["sales", "pred_sales"]].sum()
+        levels["Level 2 (State)"] = (l2["sales"].values, l2["pred_sales"].values)
+
+    l1 = forecast_df.groupby("d_num", observed=False)[["sales", "pred_sales"]].sum()
+    levels["Level 1 (National)"] = (l1["sales"].values, l1["pred_sales"].values)
+
+    rows = []
+    for lvl, (yt_raw, yp_raw) in levels.items():
+        yt, yp = _flat(yt_raw), _flat(yp_raw)
+        rows.append({
+            "Level": lvl,
+            "RMSE": round(calc_rmse(yt, yp), 3),
+            "MAE": round(calc_mae(yt, yp), 3),
+            "WMAPE (%)": round(calc_wmape(yt, yp), 3),
+            "sMAPE (%)": round(calc_smape(yt, yp), 3),
+        })
+
+    return pd.DataFrame(rows).set_index("Level")
 
 
 # ─────────────────────────────────────────────

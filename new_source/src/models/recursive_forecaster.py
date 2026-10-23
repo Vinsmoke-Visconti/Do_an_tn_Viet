@@ -66,60 +66,60 @@ class RecursiveForecaster:
         Returns:
             pd.DataFrame: Kết quả dự báo, có thêm cột `pred_{target_col}`.
         """
-        all_ids = future_features_df[id_col].unique()
+        unique_ids = future_features_df[id_col].unique()
+        future_days = sorted(future_features_df["d_num"].unique())[:self.horizon]
+
+        # Trích xuất 60 ngày lịch sử gần nhất để tạo lag/rolling buffer
+        max_hist_d = history_df["d_num"].max()
+        hist_recent = history_df[history_df["d_num"] > (max_hist_d - 60)][[id_col, "d_num", target_col]]
+        pivot_hist = (
+            hist_recent.pivot(index=id_col, columns="d_num", values=target_col)
+            .reindex(unique_ids)
+            .fillna(0)
+            .values.astype(np.float32)
+        )
+        buffer = pivot_hist.copy()
+
         results = []
+        for h, d_val in enumerate(future_days):
+            day_mask = (future_features_df["d_num"] == d_val)
+            day_rows = future_features_df[day_mask].copy()
+            day_rows = day_rows.set_index(id_col).reindex(unique_ids).reset_index()
 
-        for series_id in all_ids:
-            hist   = history_df[history_df[id_col] == series_id].copy()
-            future = future_features_df[future_features_df[id_col] == series_id].copy()
-            future = future.sort_values("d_num").reset_index(drop=True)
+            # 1. Cập nhật lag features dựa trên buffer đệ quy
+            for lag_name, lag_days in [
+                ("sales_lag_28", 28), ("sales_lag_35", 35),
+                ("sales_lag_42", 42), ("sales_lag_56", 56)
+            ]:
+                if lag_name in feature_cols:
+                    idx = -(lag_days - h)
+                    if abs(idx) <= buffer.shape[1]:
+                        day_rows[lag_name] = buffer[:, idx]
 
-            # Buffer dự báo cho bước đệ quy
-            pred_buffer = hist[[target_col]].values.flatten().tolist()
+            # 2. Cập nhật rolling features (tính trên buffer đệ quy)
+            w28 = buffer[:, -28:]
+            w7  = w28[:, -7:]
 
-            preds = []
-            for h in range(self.horizon):
-                row = future.iloc[[h]].copy()
+            if "sales_rolling_mean_7" in feature_cols:
+                day_rows["sales_rolling_mean_7"] = np.mean(w7, axis=1).astype(np.float32)
+            if "sales_rolling_std_7" in feature_cols:
+                day_rows["sales_rolling_std_7"] = np.std(w7, axis=1).astype(np.float32)
+            if "sales_rolling_mean_28" in feature_cols:
+                day_rows["sales_rolling_mean_28"] = np.mean(w28, axis=1).astype(np.float32)
+            if "sales_rolling_std_28" in feature_cols:
+                day_rows["sales_rolling_std_28"] = np.std(w28, axis=1).astype(np.float32)
 
-                # Cập nhật lag features dựa trên buffer dự báo
-                for lag_name, lag_days in [
-                    ("sales_lag_28", 28), ("sales_lag_35", 35),
-                    ("sales_lag_42", 42), ("sales_lag_56", 56)
-                ]:
-                    if lag_name in feature_cols:
-                        idx = -(lag_days - h)    # vị trí trong buffer
-                        if abs(idx) <= len(pred_buffer):
-                            row[lag_name] = pred_buffer[idx]
+            # 3. Chuyển kiểu categorical nếu cần
+            for col in day_rows.select_dtypes(include=["object"]).columns:
+                day_rows[col] = day_rows[col].astype("category")
 
-                # Cập nhật rolling features (tính trên pred_buffer)
-                window_28 = np.array(pred_buffer[-28:], dtype=np.float32)
-                window_7  = window_28[-7:]
+            # 4. Dự báo vector hóa toàn bộ SKUs cho ngày h
+            preds = self.model.predict(day_rows[feature_cols])
+            preds = np.clip(preds, 0, None).astype(np.float32)
 
-                if "sales_rolling_mean_7" in feature_cols:
-                    row["sales_rolling_mean_7"]  = float(np.mean(window_7))
-                if "sales_rolling_std_7" in feature_cols:
-                    row["sales_rolling_std_7"]   = float(np.std(window_7)) if len(window_7) > 1 else 0.0
-                if "sales_rolling_mean_28" in feature_cols:
-                    row["sales_rolling_mean_28"] = float(np.mean(window_28))
-                if "sales_rolling_std_28" in feature_cols:
-                    row["sales_rolling_std_28"]  = float(np.std(window_28)) if len(window_28) > 1 else 0.0
-                if "sales_ewm_alpha02" in feature_cols:
-                    row["sales_ewm_alpha02"] = float(
-                        pd.Series(pred_buffer).ewm(alpha=0.2, min_periods=1).mean().iloc[-1])
-                if "sales_ewm_alpha05" in feature_cols:
-                    row["sales_ewm_alpha05"] = float(
-                        pd.Series(pred_buffer).ewm(alpha=0.5, min_periods=1).mean().iloc[-1])
-
-                # Đảm bảo đúng thứ tự cột và kiểu dữ liệu
-                X_row = row[feature_cols].copy()
-                for col in X_row.select_dtypes(include=["object"]).columns:
-                    X_row[col] = X_row[col].astype("category")
-
-                pred_val = float(np.clip(self.model.predict(X_row)[0], 0, None))
-                preds.append(pred_val)
-                pred_buffer.append(pred_val)   # Đẩy dự báo vào buffer đệ quy
-
-            future[f"pred_{target_col}"] = preds
-            results.append(future)
+            day_rows[f"pred_{target_col}"] = preds
+            # Cập nhật buffer cho các bước tiếp theo
+            buffer = np.hstack([buffer, preds[:, None]])
+            results.append(day_rows)
 
         return pd.concat(results, ignore_index=True)
