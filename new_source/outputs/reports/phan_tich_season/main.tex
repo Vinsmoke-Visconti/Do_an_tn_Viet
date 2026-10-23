@@ -20,19 +20,21 @@
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage{geometry}
-\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=3.0cm, right=2.0cm}
+\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=3.0cm, right=2.0cm, headheight=16pt}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
     linkcolor=blue!80!black,
     citecolor=red!70!black,
-    urlcolor=teal
+    urlcolor=teal,
+    pdfencoding=auto
 }
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{fancyhdr}
+\setlength{\headheight}{16pt}
 \usepackage{setspace}
 \onehalfspacing
 
@@ -199,7 +201,7 @@ Hàm tự tương quan $r_k$ đo lường mối liên hệ tuyến tính giữa 
     \item Đồ thị PACF ghi nhận cú sốc tương quan dương mạnh nhất tại $\mathrm{Lag}\;7$, sau đó triệt tiêu về vùng tin cậy. Điều này chứng minh rằng một mô hình tự hồi quy có xét đến thành phần mùa vụ bậc 7 ($AR(7)$ hoặc $SAR$) có thể giải thích trọn vẹn sự phụ thuộc thời gian của chuỗi.
 \end{itemize}
 
-\subsection{Phương pháp 4: Chỉ số sức mạnh mùa vụ $F_S$ (Seasonal Strength Index - SSI)}
+\subsection{Phương pháp 4: Chỉ số sức mạnh mùa vụ \texorpdfstring{$F_S$}{Fs} (Seasonal Strength Index - SSI)}
 Theo lý thuyết của Wang, Smith \& Hyndman (2006), để định lượng hóa mức độ mạnh hay yếu của tính mùa vụ bằng một con số vô hướng chuẩn hóa trên đoạn $[0, 1]$, ta tính tỷ số phương sai giữa phần dư và tổng phương sai thành phần:
 \begin{mathformal}{Công thức Chỉ Số Sức Mạnh Mùa Vụ ($F_S$) và Xu Hướng ($F_T$)}
     \begin{align}
@@ -217,17 +219,17 @@ Theo lý thuyết của Wang, Smith \& Hyndman (2006), để định lượng h�
 % ==============================================================================
 % CHƯƠNG 3: CHỨNG MINH TÍNH ĐA CẤP ĐỘ
 % ==============================================================================
-\section{Chứng Minh Tính Đa Cấp Độ (Hierarchical Seasonality)}
+\section[Chứng Minh Tính Đa Cấp Độ (Hierarchical Seasonality)]{Chứng Minh Tính Đa Cấp Độ Trong Mùa Vụ}
 
 \subsection{Bằng chứng thực nghiệm xuyên suốt 5 cấp độ phân cấp}
 Một câu hỏi then chốt của hội đồng phản biện là: \textit{Liệu tính mùa vụ có đồng nhất trên mọi cấp độ phân cấp của hệ thống siêu thị hay không?} Câu trả lời đã được chứng minh định lượng trên toàn bộ 5 cấp độ của M5:
 
 \begin{table}[htbp]
     \centering
-    \small
     \caption{Bảng tổng hợp chỉ số mùa vụ $F_S$, xu hướng $F_T$ và phân rã phương sai trên 5 cấp độ M5.}
     \label{tab:hierarchical_seasonality}
-    \begin{tabularx}{\textwidth}{l l c c c c c X}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{l l c c c c c l}
         \toprule
         \textbf{Cấp độ} & \textbf{Đại diện} & \textbf{Doanh số TB} & \textbf{Tỷ lệ Zero} & \textbf{$\bm{F_S}$ (SSI)} & \textbf{$\bm{F_T}$ (TSI)} & \textbf{\% Var Seasonal} & \textbf{Nhận xét} \\
         \midrule
@@ -237,7 +239,8 @@ Một câu hỏi then chốt của hội đồng phản biện là: \textit{Li�
         \textbf{L9 - Ngành/Bang}& FOODS\_CA      & $10{,}751$ sp/ngày & $0.0\%$ & \textbf{0.7822} & 0.4902 & $74.0\%$ & Mùa vụ cực mạnh \\
         \textbf{L12 - Cấp SKU}  & FOODS\_1\_001  & $0.66$ sp/ngày     & \textbf{58.7\%} & \textbf{0.1334} & 0.0422 & $19.1\%$ & \textbf{Bị nhiễu lấn át} \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}%
+    }
 \end{table}
 
 \begin{figure}[htbp]
