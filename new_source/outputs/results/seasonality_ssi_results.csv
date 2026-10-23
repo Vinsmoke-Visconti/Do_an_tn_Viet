@@ -1,6 +1,6 @@
-﻿Level,SSI_7day,TSI,PctVar_Seasonal,PctVar_Trend,Nhan_xet
-L1,0.7523,0.4128,72.4,12.08,Manh
-L2,0.8016,0.4057,78.16,11.14,Manh
-L3,0.8112,0.2813,81.19,6.81,Manh
-L9,0.7822,0.4902,74.03,15.51,Manh
-L12,0.1334,0.0422,19.11,11.85,Yeu
+﻿Level,Label,Key,SSI_7day,TSI,PctVar_Seasonal,PctVar_Trend,PctVar_Resid,Nhan_xet
+L1,L1 - Toan quoc (National Total),Total,0.7523,0.4128,72.4,12.08,21.09,Manh (Strong)
+L2,L2 - Bang (State Level - CA),CA,0.8016,0.4057,78.16,11.14,17.45,Manh (Strong)
+L3,L3 - Cua hang (Store Level - CA_1),CA_1,0.8112,0.2813,81.19,6.81,17.59,Manh (Strong)
+L9,L9 - Nganh hang x Bang (Cat x State - FOODS_CA),CA_FOODS,0.7822,0.4902,74.03,15.51,17.97,Manh (Strong)
+L12,L12 - San pham tai Cua hang (SKU Level),FOODS_1_001_CA_1,0.1334,0.0422,19.11,11.85,84.55,Yeu/Nhiễu (Weak/Noisy)

@@ -24,19 +24,27 @@ if os.path.exists(tex_thesis_src):
 if os.path.exists(bib_src):
     shutil.copy(bib_src, os.path.join(pkg_dir, "references.bib"))
 
-# Copy seasonality figures
+# Recursive copy for seasonality figures (supports subdirectories L1, L2, etc.)
 fig_season = os.path.join(base_dir, "figures", "seasonality")
 dst_season = os.path.join(pkg_dir, "figures", "seasonality")
 if os.path.exists(fig_season):
-    for f in os.listdir(fig_season):
-        shutil.copy(os.path.join(fig_season, f), os.path.join(dst_season, f))
+    for root, dirs, files in os.walk(fig_season):
+        rel = os.path.relpath(root, fig_season)
+        target_sub = os.path.join(dst_season, rel) if rel != "." else dst_season
+        os.makedirs(target_sub, exist_ok=True)
+        for f in files:
+            shutil.copy(os.path.join(root, f), os.path.join(target_sub, f))
 
-# Copy attention figures
+# Recursive copy for attention figures
 fig_attn = os.path.join(base_dir, "figures", "attention")
 dst_attn = os.path.join(pkg_dir, "figures", "attention")
 if os.path.exists(fig_attn):
-    for f in os.listdir(fig_attn):
-        shutil.copy(os.path.join(fig_attn, f), os.path.join(dst_attn, f))
+    for root, dirs, files in os.walk(fig_attn):
+        rel = os.path.relpath(root, fig_attn)
+        target_sub = os.path.join(dst_attn, rel) if rel != "." else dst_attn
+        os.makedirs(target_sub, exist_ok=True)
+        for f in files:
+            shutil.copy(os.path.join(root, f), os.path.join(target_sub, f))
 
 # Zip the package
 if os.path.exists(zip_path):
@@ -51,7 +59,9 @@ with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
 
 print(f"SUCCESS: Package folder created at {pkg_dir}")
 print(f"SUCCESS: Zip file created at {zip_path}")
-print("Contents:")
+print("Contents summary:")
+file_count = 0
 for root, dirs, files in os.walk(pkg_dir):
     for f in files:
-        print(" -", os.path.relpath(os.path.join(root, f), pkg_dir))
+        file_count += 1
+print(f"Total packaged files: {file_count}")
