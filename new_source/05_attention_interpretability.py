@@ -16,6 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 from matplotlib.colors import LinearSegmentedColormap
 import lightgbm as lgb
@@ -63,7 +64,7 @@ for c in str_cols:
     df[c] = df[c].astype(str).fillna("unknown")
 
 print(f"   Data: {df.shape[0]:,} rows x {df.shape[1]} cols | {df['id'].nunique():,} SKUs")
-print(f"   Date: {df['date'].min().date()} -> {df['date'].max().date()} ({time.time()-t0:.1f}s)")
+print(f"   Date: {df['date'].min().strftime('%d-%m-%Y')} -> {df['date'].max().strftime('%d-%m-%Y')} ({time.time()-t0:.1f}s)")
 
 EXOGENOUS_KNOWN = {
     "Price Features":         ["sell_price","price_norm_mean","price_discount","price_momentum","price_mean","price_std"],
@@ -603,8 +604,9 @@ if len(event_window) >= 15:
     w_is_evt = (event_window["has_event"].values > 0)
     
     fig, axes_ev = plt.subplots(3, 1, figsize=(15, 10), sharex=True)
+    target_dt_str = pd.to_datetime(target_event_date).strftime('%d-%m-%Y')
     fig.suptitle(f"Case Study: Co Che Kich Hoat Attention Xung Quanh Ngay Su Kien Lon\n"
-                 f"SKU: {case_sku_id} | Ngay Su Kien Trung Tam: {pd.to_datetime(target_event_date).date()}",
+                 f"SKU: {case_sku_id} | Ngay Su Kien Trung Tam: {target_dt_str}",
                  fontsize=13, fontweight="bold", y=0.98)
     
     # 1. Sales & Event Flag
@@ -645,8 +647,9 @@ if len(event_window) >= 15:
     axes_ev[2].legend(l_a + l_b, lb_a + lb_b, loc="upper left", fontsize=9)
     
     for ax_w in axes_ev:
-        ax_w.xaxis.set_major_locator(mticker.MaxNLocator(10))
-        ax_w.tick_params(labelsize=9)
+        ax_w.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=10))
+        ax_w.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
+        ax_w.tick_params(labelsize=8.5)
         
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     p_window = os.path.join(OUT_FIG, "06_event_focus_attention_window.png")

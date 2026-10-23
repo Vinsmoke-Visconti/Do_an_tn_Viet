@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 from statsmodels.tsa.seasonal import STL
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
@@ -209,10 +210,11 @@ for lv in ["L1", "L2", "L3", "L9", "L12"]:
     axes[3].grid(alpha=0.3)
     axes[3].legend(loc="upper left", fontsize=9)
     
-    # Formatting ticks
+    # Formatting ticks (dd-mm-yyyy)
     for ax in axes:
-        ax.xaxis.set_major_locator(mticker.MaxNLocator(8))
-        ax.tick_params(labelsize=9)
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=8))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
+        ax.tick_params(labelsize=8.5)
     
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     p_stl = os.path.join(target_dir, "01_stl_decomposition.png")
@@ -349,8 +351,9 @@ for lv in ["L1", "L2", "L3", "L9", "L12"]:
     axes_prep[2].grid(alpha=0.3)
     
     for ax_p in axes_prep:
-        ax_p.xaxis.set_major_locator(mticker.MaxNLocator(8))
-        ax_p.tick_params(labelsize=9)
+        ax_p.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=8))
+        ax_p.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
+        ax_p.tick_params(labelsize=8.5)
         
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     p_prep = os.path.join(target_dir, "04_seasonality_preprocessing.png")
@@ -456,8 +459,9 @@ ax_micro.grid(alpha=0.3)
 ax_micro.legend(loc="upper right", fontsize=9.5)
 
 for ax_m in [ax_macro, ax_micro]:
-    ax_m.xaxis.set_major_locator(mticker.MaxNLocator(9))
-    ax_m.tick_params(labelsize=9)
+    ax_m.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=9))
+    ax_m.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
+    ax_m.tick_params(labelsize=8.5)
 
 plt.tight_layout(rect=[0, 0, 1, 0.96])
 p_macro_micro = os.path.join(sum_dir, "02_macro_vs_micro_comparison.png")
@@ -523,7 +527,8 @@ for row, (lv, res) in enumerate(stl_results.items()):
     
     for ax_col in [ax0, ax1, ax2, ax3]:
         ax_col.tick_params(labelsize=7.5)
-        ax_col.xaxis.set_major_locator(mticker.MaxNLocator(4))
+        ax_col.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=4))
+        ax_col.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
         ax_col.grid(alpha=0.25)
 
 plt.tight_layout(rect=[0, 0, 1, 0.97])
@@ -613,7 +618,8 @@ for row, (lv, s) in enumerate(series_dict.items()):
     ax2.legend(lines1+lines2, labels1+labels2, fontsize=6, loc="upper right")
     for ax_sub in [ax0, ax1, ax2]:
         ax_sub.tick_params(labelsize=7)
-        ax_sub.xaxis.set_major_locator(mticker.MaxNLocator(4))
+        ax_sub.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=4))
+        ax_sub.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y"))
 plt.tight_layout(rect=[0, 0, 1, 0.97])
 safe_savefig(os.path.join(OUT_FIG, "06_seasonality_preprocessing.png"), dpi=160, bbox_inches="tight")
 plt.close()

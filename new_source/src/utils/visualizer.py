@@ -67,7 +67,7 @@ def plot_28day_forecast(
     step = max(1, len(x) // 7)
     ax.set_xticks(x[::step])
     if dates is not None and len(dates) > 0:
-        lbl = [pd.to_datetime(d).strftime("%d/%m") for d in dates[::step]]
+        lbl = [pd.to_datetime(d).strftime("%d-%m-%Y") for d in dates[::step]]
         ax.set_xticklabels(lbl, rotation=20)
 
     ax.set_title(title, fontweight="bold", pad=12)
