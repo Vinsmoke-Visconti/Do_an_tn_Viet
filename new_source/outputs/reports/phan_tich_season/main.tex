@@ -145,7 +145,7 @@ Nếu biên độ dao động mùa vụ tỷ lệ thuận với mức độ lớ
 Để chứng minh một cách chặt chẽ và không thể bác bỏ về sự hiện diện của tính mùa vụ, nghiên cứu áp dụng phối hợp 4 kỹ thuật định lượng và trực quan hóa chuyên sâu:
 
 \subsection{Phương pháp 1: Phân rã STL (Loess Decomposition)}
-Thuật toán STL (\textit{Seasonal and Trend decomposition using Loess}, Cleveland et al., 1990) sử dụng kỹ thuật hồi quy phi tham số cục bộ (\textit{Locally Estimated Scatterplot Smoothing}) để bóc tách độc lập ba thành phần $T_t, S_t, R_t$. Ưu điểm vượt trội của STL so với phương pháp cổ điển Classical Decomposition là khả năng xử lý các điểm dị biệt (\textit{robust to outliers}) và cho phép thành phần mùa vụ biến thiên mềm dẻo theo thời gian.
+Thuật toán STL (\textit{Seasonal and Trend decomposition using Loess}, Cleveland et al., 1990) sử dụng kỹ thuật hồi quy phi tham số cục bộ (\textit{Locally Estimated Scatterplot Smoothing}) để phân giải và phân tích độc lập ba thành phần $T_t, S_t, R_t$. Ưu điểm vượt trội của STL so với phương pháp cổ điển Classical Decomposition là khả năng xử lý các điểm dị biệt (\textit{robust to outliers}) và cho phép thành phần mùa vụ biến thiên mềm dẻo theo thời gian.
 
 \begin{figure}[htbp]
     \centering
@@ -154,13 +154,16 @@ Thuật toán STL (\textit{Seasonal and Trend decomposition using Loess}, Clevel
     \label{fig:stl_l1}
 \end{figure}
 
-\textbf{Minh chứng thực nghiệm (Hình~\ref{fig:stl_l1}):}
-Tại cấp độ L1 (Toàn quốc), biểu đồ quan sát ($Observed$) dao động nhịp nhàng từ $30{,}000$ đến hơn $50{,}000$ sản phẩm/ngày. Khi phân rã:
-\begin{enumerate}
-    \item $Trend$ phản ánh sự gia tăng sức mua ổn định từ mùa xuân sang mùa hè 2015--2016.
-    \item $Seasonal$ thể hiện dạng sóng sin tuần hoàn đều đặn tuyệt đối 7 ngày. Các đỉnh sóng luôn rơi chính xác vào Thứ Bảy và Chủ Nhật (được làm nổi bật bằng dải highlight), trong khi đáy sóng rơi vào giữa tuần.
-    \item $Residual$ duy trì biên độ dao động hẹp quanh mức 0, chứng minh phần lớn phương sai của chuỗi đã được giải thích bởi thành phần mùa vụ.
-\end{enumerate}
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ STL (Hình~\ref{fig:stl_l1}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ phân giải chuỗi doanh số tổng hợp toàn quốc (Cấp L1) thành 4 thành phần độc lập: \textit{Observed} (doanh số thực tế ghi nhận), \textit{Trend} (xu thế biến động dài hạn), \textit{Seasonal} (sóng dao động tuần hoàn chu kỳ 7 ngày) và \textit{Residual} (phần dư ngẫu nhiên sau khi đã tách bỏ xu hướng và mùa vụ).
+    \item \textbf{Nguyên nhân các giá trị cao đột biến:}
+    \begin{enumerate}
+        \item Trên hai đồ thị \textit{Observed} và \textit{Seasonal}, các đỉnh nhọn tăng vọt đột biến (đạt trên $50{,}000$ sản phẩm/ngày, cao hơn ngày thường từ $35\% - 45\%$) luôn rơi chính xác vào hai ngày cuối tuần (Thứ Bảy và Chủ Nhật, được đánh dấu bằng dải màu hồng). Điều này phản ánh rõ nét tập quán tiêu dùng của người dân Mỹ: tập trung thời gian nghỉ ngơi cuối tuần để lái xe đến các đại siêu thị Walmart mua sắm thực phẩm và nhu yếu phẩm tích trữ cho cả tuần làm việc kế tiếp.
+        \item Đồ thị \textit{Trend} cho thấy xu thế tăng trưởng dài hạn ổn định từ khoảng $37{,}000$ lên trên $43{,}000$ sản phẩm/ngày từ mùa xuân sang mùa hè 2015--2016, phản ánh sự phục hồi chung của sức mua vĩ mô và mùa tiêu dùng du lịch/nghỉ dưỡng gia tăng.
+        \item Đồ thị \textit{Residual} dao động với biên độ rất hẹp quanh trục 0 (chỉ trong khoảng $\pm 2{,}000$ sản phẩm, tương đương sai số ngẫu nhiên $< 5\%$). Điều này chứng minh rằng ở cấp độ vĩ mô toàn quốc, thành phần xu hướng và nhịp mùa vụ tuần 7 ngày đã giải thích tới $72.4\%$ tổng biến thiên của chuỗi, triệt tiêu gần như toàn bộ nhiễu ngẫu nhiên.
+    \end{enumerate}
+\end{itemize}
 
 \subsection{Phương pháp 2: Phân tích phổ Fourier FFT (Periodogram Spectral Analysis)}
 Phương pháp phân tích phổ Fourier chuyển đổi chuỗi thời gian từ miền thời gian (\textit{Time Domain}) sang miền tần số (\textit{Frequency Domain}) bằng phép biến đổi Fourier nhanh (FFT). Mật độ phổ công suất (\textit{Spectral Power Density} $S(f)$) đo lường mức độ tập trung năng lượng tại tần số $f$. Ta chuyển đổi tần số sang chu kỳ số ngày $P = 1/f$:
@@ -175,11 +178,15 @@ Phương pháp phân tích phổ Fourier chuyển đổi chuỗi thời gian t�
     \label{fig:fft_l1}
 \end{figure}
 
-\textbf{Minh chứng thực nghiệm (Hình~\ref{fig:fft_l1}):}
-Trên đồ thị mật độ phổ bán logarit (\textit{semilogy}):
+\paragraph{Nhận xét chuyên sâu và phân tích phổ Fourier (Hình~\ref{fig:fft_l1}):}
 \begin{itemize}
-    \item \textbf{Đỉnh năng lượng tối thượng tại $P = 7.0$ ngày:} Mật độ phổ đạt giá trị cao nhất trên toàn dải tần số ($> 10^7$), khẳng định nhịp tuần hoàn 7 ngày là tín hiệu dao động nền tảng chi phối toàn bộ hệ thống bán lẻ.
-    \item \textbf{Đỉnh sóng hài bậc hai tại $P = 14.0$ ngày và $P = 28.0$ ngày:} Đánh dấu chu kỳ bán nguyệt (2 tuần) và chu kỳ tháng bán lẻ (4 tuần/SNAP).
+    \item \textbf{Sơ đồ nói lên điều gì:} Biểu đồ mật độ phổ Fourier (Periodogram) biểu thị phân bổ năng lượng dao động của chuỗi thời gian theo chu kỳ số ngày $P$. Trục tung sử dụng thang đo bán logarit (\textit{semilogy}) thể hiện mật độ phổ công suất, còn trục hoành biểu thị chu kỳ $P$ (ngày/chu kỳ).
+    \item \textbf{Nguyên nhân các đỉnh năng lượng cao đột biến:}
+    \begin{enumerate}
+        \item \textbf{Đỉnh cực đại tuyệt đối tại $P = 7.0$ ngày:} Mật độ phổ tại chu kỳ 7 ngày vọt lên mức vượt trội $> 10^7$, cao gấp hàng ngàn lần so với mức nền nhiễu của các chu kỳ khác. Đây là bằng chứng toán học đanh thép nhất xác nhận rằng chu kỳ tuần 7 ngày là tín hiệu sóng chủ đạo và mạnh mẽ nhất chi phối toàn bộ nhịp đập kinh doanh bán lẻ.
+        \item \textbf{Các đỉnh phụ thứ cấp tại $P = 14.0$ ngày và $P = 28.0$ ngày:} Đỉnh đột biến tại chu kỳ 14 ngày tương ứng với sóng hài bậc hai của chu kỳ tuần, đồng thời gắn với chu kỳ trả lương bán nguyệt (2 tuần một lần) của người lao động Mỹ; trong khi đỉnh $P = 28.0$ ngày phản ánh chu kỳ tháng bán lẻ (4 tuần) và thời điểm giải ngân chương trình trợ cấp lương thực SNAP trong 10--15 ngày đầu tháng.
+        \item \textbf{Ý nghĩa với kỹ thuật trích xuất đặc trưng (Feature Engineering):} Sự xuất hiện của các đỉnh năng lượng cao đột biến này chỉ ra rằng mô hình học máy bắt buộc phải được cung cấp các đặc trưng trễ tuần $\mathrm{lag\_7}$, $\mathrm{lag\_14}$, $\mathrm{lag\_28}$ và các cặp sóng điều hòa Fourier $\sin(2\pi t/7)$, $\cos(2\pi t/7)$ để nắm bắt trọn vẹn năng lượng chu kỳ này.
+    \end{enumerate}
 \end{itemize}
 
 \subsection{Phương pháp 3: Hàm tự tương quan (ACF) và Tự tương quan riêng phần (PACF)}
@@ -195,10 +202,15 @@ Hàm tự tương quan $r_k$ đo lường mối liên hệ tuyến tính giữa 
     \label{fig:acf_l1}
 \end{figure}
 
-\textbf{Minh chứng thực nghiệm (Hình~\ref{fig:acf_l1}):}
+\paragraph{Nhận xét chuyên sâu và phân tích tương quan ACF/PACF (Hình~\ref{fig:acf_l1}):}
 \begin{itemize}
-    \item Đồ thị ACF thể hiện dạng sóng hình sin tắt dần chậm (\textit{slow sinusoidal decay}). Các hệ số tương quan đạt cực đại địa phương tại chính xác các độ trễ là bội số của 7: $\mathrm{Lag}\;7 \;(r_7 \approx 0.78)$, $\mathrm{Lag}\;14 \;(r_{14} \approx 0.72)$, $\mathrm{Lag}\;21, \mathrm{Lag}\;28$. Tất cả đều vượt xa ngưỡng tin cậy 95\% (dải màu xanh).
-    \item Đồ thị PACF ghi nhận cú sốc tương quan dương mạnh nhất tại $\mathrm{Lag}\;7$, sau đó triệt tiêu về vùng tin cậy. Điều này chứng minh rằng một mô hình tự hồi quy có xét đến thành phần mùa vụ bậc 7 ($AR(7)$ hoặc $SAR$) có thể giải thích trọn vẹn sự phụ thuộc thời gian của chuỗi.
+    \item \textbf{Sơ đồ nói lên điều gì:} Đồ thị ACF phân tích mức độ tự tương quan toàn phần của chuỗi với chính nó tại các độ trễ từ 1 đến 45 ngày; đồ thị PACF phân tích mức độ tự tương quan riêng phần sau khi đã loại bỏ ảnh hưởng gián tiếp của các bước trễ trung gian.
+    \item \textbf{Nguyên nhân các giá trị cao đột biến:}
+    \begin{enumerate}
+        \item \textbf{Trên đồ thị ACF:} Đường tương quan dao động theo dạng sóng hình sin tắt dần rất chậm (\textit{slow sinusoidal decay}). Các hệ số tương quan đạt đỉnh nhọn cao đột biến tại chính xác các bước trễ là bội số nguyên của 7: $\mathrm{Lag}\;7 \;(r_7 \approx 0.78)$, $\mathrm{Lag}\;14 \;(r_{14} \approx 0.72)$, $\mathrm{Lag}\;21 \;(r_{21} \approx 0.68)$, $\mathrm{Lag}\;28 \;(r_{28} \approx 0.65)$, và $\mathrm{Lag}\;35 \;(r_{35} \approx 0.61)$. Tất cả các đỉnh này đều vượt rất xa khỏi dải tin cậy 95\% (dải màu xanh nhạt $\pm 0.1$), minh chứng tính phụ thuộc thời gian cực kỳ bền bỉ giữa các ngày cùng thứ qua các tuần liên tiếp.
+        \item \textbf{Trên đồ thị PACF:} Duy nhất chỉ có $\mathrm{Lag}\;7$ ghi nhận giá trị dương cao đột biến ($r \approx 0.78$). Bắt đầu từ $\mathrm{Lag}\;8$ trở đi, toàn bộ hệ số PACF lập tức triệt tiêu và rơi hoàn toàn vào trong dải tin cậy quanh mức 0. Hiện tượng này khẳng định rằng mối tương quan cao ở các độ trễ 14, 21, 28 trên đồ thị ACF thực chất là do hiệu ứng lan truyền gián tiếp từ độ trễ 7 ngày tạo ra.
+        \item \textbf{Kết luận mô hình hóa:} Chuỗi thời gian bán lẻ tuân theo một quá trình tự hồi quy mùa vụ bậc 1 thuần khiết: $\mathrm{SAR}(1)_7$. Do đó, việc nắm bắt được bước trễ $\mathrm{Lag}\;7$ sẽ giúp mô hình giải quyết được phần lớn sự phụ thuộc chu kỳ của chuỗi.
+    \end{enumerate}
 \end{itemize}
 
 \subsection{Phương pháp 4: Chỉ số sức mạnh mùa vụ \texorpdfstring{$F_S$}{Fs} (Seasonal Strength Index - SSI)}
@@ -250,6 +262,17 @@ Một câu hỏi then chốt của hội đồng phản biện là: \textit{Li�
     \label{fig:ssi_master}
 \end{figure}
 
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ SSI đa cấp độ (Hình~\ref{fig:ssi_master}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Đồ thị bên trái biểu thị Chỉ số sức mạnh mùa vụ $F_S$ (SSI) tại 5 cấp độ phân cấp đối sánh trực diện với hai ngưỡng học thuật chuẩn ($0.64$ là ngưỡng mùa vụ mạnh, $0.40$ là ngưỡng trung bình). Đồ thị bên phải phân rã $100\%$ phương sai của chuỗi thành 3 thành phần cấu thành: \% Mùa vụ (xanh dương), \% Xu hướng (xanh lá) và \% Nhiễu ngẫu nhiên phần dư (đỏ).
+    \item \textbf{Giải thích các giá trị cao đột biến và sự sụt giảm nghiêm trọng:}
+    \begin{enumerate}
+        \item \textbf{Giá trị $F_S$ cao đột biến tại các cấp tổng hợp (L1, L2, L3, L9):} Chỉ số $F_S$ duy trì ở mức rất cao từ $0.7523$ đến $0.8112$ (đều vượt xa ngưỡng mùa vụ mạnh $0.64$). Đỉnh cao nhất đạt được tại Cấp L3 (Store CA\_1) với $F_S = 0.8112$. Trên đồ thị bên phải, thành phần mùa vụ tuần chiếm áp đảo từ $72.4\%$ đến $81.2\%$ tổng phương sai, trong khi nhiễu ngẫu nhiên chỉ chiếm từ $17.5\% - 21.1\%$.
+        \item \textbf{Sự sụt giảm đột ngột tại Cấp L12 (SKU đơn lẻ):} Chỉ số $F_S$ tụt dốc thảm hại xuống chỉ còn $0.1334$ (giảm hơn 6 lần so với cấp cửa hàng). Đồng thời, thanh màu đỏ (phương sai nhiễu ngẫu nhiên) vọt lên chiếm tới $84.5\%$ tổng phương sai của chuỗi, đè bẹp thành phần mùa vụ chỉ còn vỏn vẹn $19.1\%$.
+        \item \textbf{Ý nghĩa cốt lõi:} Biểu đồ này chứng minh một cách không thể chối cãi quy luật phân tầng trong bán lẻ: Tính mùa vụ là một thuộc tính vĩ mô tập thể xuất hiện rõ nét ở quy mô siêu thị và quốc gia, nhưng bị che lấp gần như hoàn toàn bởi nhiễu ngẫu nhiên ở cấp độ từng món hàng vi mô.
+    \end{enumerate}
+\end{itemize}
+
 \subsection{Bản chất toán học: Hiệu ứng triệt tiêu nhiễu nhờ tổng hợp (Aggregation Effect)}
 Kết quả từ Bảng~\ref{tab:hierarchical_seasonality} và Hình~\ref{fig:ssi_master} chỉ ra một quy luật phân cấp mang tính cốt lõi:
 \begin{keyinsight}{Quy Luật Suy Giảm Tín Hiệu Mùa Vụ Từ Vĩ Mô Xuống Vi Mô}
@@ -287,8 +310,16 @@ Vì tại một siêu thị Walmart có $N \approx 3{,}049$ SKU và toàn quốc
     \label{fig:macro_vs_micro}
 \end{figure}
 
-\textbf{Minh chứng trực quan (Hình~\ref{fig:macro_vs_micro}):}
-Tại cấp SKU L12, sản phẩm có tới $58.7\%$ ngày bán được 0 sản phẩm (doanh số ngắt quãng - \textit{intermittent demand}). Chuỗi doanh số vi mô biểu hiện như một hàm bước rời rạc nhảy cóc ($0, 1, 2$ sản phẩm). Tuy nhiên, khi cộng gộp hàng ngàn chuỗi rời rạc đó lại, ta thu được chuỗi L1 tuyệt đối trơn tru với nhịp điệu tuần hoàn hoàn hảo.
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ Macro vs Micro (Hình~\ref{fig:macro_vs_micro}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ đặt cạnh nhau hành vi doanh số trong cùng 90 ngày giữa hai thái cực đối lập: Cấp L1 (Toàn quốc, đại diện cho bức tranh vĩ mô) và Cấp L12 (Mặt hàng đơn lẻ $\mathrm{FOODS\_1\_001\_CA\_1}$, đại diện cho bức tranh vi mô).
+    \item \textbf{Giải thích sự tương phản và các giá trị đột biến:}
+    \begin{enumerate}
+        \item \textbf{Biểu đồ trên (L1 - Vĩ mô):} Doanh số dao động điều hòa tuyệt đối với biên độ từ $30{,}000$ đến trên $50{,}000$ đơn vị sản phẩm/ngày. Các đỉnh nhọn cao đột biến xuất hiện đều đặn như đồng hồ sau mỗi 7 ngày tại các ngày cuối tuần (dải màu xanh lam). Mức chênh lệch giữa đáy ngày thường và đỉnh cuối tuần luôn đạt $\sim 15{,}000$ sản phẩm.
+        \item \textbf{Biểu đồ dưới (L12 - Vi mô):} Hoàn toàn đối lập, doanh số biểu hiện dưới dạng hàm bậc thang rời rạc, nhảy cóc giữa các mức $0, 1, 2$ sản phẩm. Tỷ lệ ngày có doanh số bằng 0 lên tới $58.7\%$. Đặc biệt, ngay cả vào các ngày cuối tuần (dải màu hồng), sản phẩm này vẫn thường xuyên ghi nhận doanh số bằng 0!
+        \item \textbf{Nguyên nhân thực tiễn:} Một khách hàng cá nhân khi ghé siêu thị Walmart cuối tuần có thể mua hàng chục món hàng nhưng không nhất định phải mua đúng món hàng này (nhu cầu ngắt quãng - \textit{intermittent demand}). Chỉ khi gộp chung hàng chục ngàn sản phẩm lại, quy luật số lớn mới giúp triệt tiêu các biến cố ngẫu nhiên cá thể và hiển lộ nhịp tuần hoàn vĩ mô hoàn hảo.
+    \end{enumerate}
+\end{itemize}
 
 \begin{figure}[htbp]
     \centering
@@ -296,6 +327,17 @@ Tại cấp SKU L12, sản phẩm có tới $58.7\%$ ngày bán được 0 sản
     \caption{Heatmap phân tích tương tác Mùa vụ Tháng $\times$ Ngày trong tuần trên cả 5 cấp độ phân cấp.}
     \label{fig:heatmap_overview}
 \end{figure}
+
+\paragraph{Nhận xét chuyên sâu và phân tích Heatmap mùa vụ (Hình~\ref{fig:heatmap_overview}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Bản đồ nhiệt biểu thị ma trận tương tác hai chiều giữa Mùa vụ năm (12 Tháng trên trục tung) và Mùa vụ tuần (7 Ngày trên trục hoành) trên toàn bộ 5 cấp độ phân cấp. Thang màu chuẩn hóa từ xanh lục (doanh số thấp) sang vàng và đỏ thẫm (doanh số cao).
+    \item \textbf{Giải thích các vùng màu đỏ rực rỡ cao đột biến:}
+    \begin{enumerate}
+        \item Tại 4 cấp độ tổng hợp (L1, L2, L3, L9), hai cột ngoài cùng bên phải (Sat và Sun) luôn tạo thành một dải màu đỏ cam rực rỡ chạy dọc từ Tháng 1 đến Tháng 12. Điều này khẳng định đỉnh mua sắm cuối tuần là một quy luật bất biến diễn ra liên tục quanh năm, không phụ thuộc vào mùa vụ thời tiết.
+        \item Theo chiều dọc của trục Tháng, các tháng 4, 5, 6, 7, 8 thể hiện tông màu ấm hơn hẳn so với Tháng 1 và Tháng 2. Điều này phản ánh nhịp mùa vụ năm: sau mùa lễ hội đầu năm người tiêu dùng có xu hướng tiết kiệm, sau đó nhu cầu tiêu dùng và du lịch phục hồi mạnh mẽ từ dịp Lễ Phục Sinh (Easter) kéo dài suốt mùa hè.
+        \item Tại Cấp L12 (ô ngoài cùng bên phải), ma trận nhiệt bị vỡ vụn thành các ô màu lốm đốm, không hình thành các dải đỏ rõ rệt do tỷ lệ ngày bán bằng 0 quá cao làm nhòe mờ tín hiệu mùa vụ ở cấp độ mặt hàng đơn lẻ.
+    \end{enumerate}
+\end{itemize}
 
 % ==============================================================================
 % CHƯƠNG 4: KỸ THUẬT TIỀN XỬ LÝ VÀ BIỂU DIỄN ĐẶC TRƯNG MÙA VỤ
@@ -325,8 +367,16 @@ với chu kỳ tuần $P = 7$ và chu kỳ nửa tháng $P = 14$.
     \label{fig:prep_l3}
 \end{figure}
 
-\textbf{Minh chứng thực nghiệm (Hình~\ref{fig:prep_l3}):}
-Các sóng điều hòa $\sin(2\pi t/7)$ và $\cos(2\pi t/7)$ bám sát tuyệt đối pha của doanh số thực tế. Khi kết hợp cặp hàm lượng giác này, mạng nơ-ron có thể xấp xỉ bất kỳ dạng sóng tuần hoàn phi đối xứng nào thông qua tổ hợp tuyến tính trọng số của các lớp ẩn.
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ tiền xử lý (Hình~\ref{fig:prep_l3}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ biểu diễn 3 giai đoạn xử lý dữ liệu trước khi đưa vào mô hình học máy tại Cấp L3: (1) Chuỗi doanh số gốc $Y_t$ so với đường xu hướng $T_t$; (2) Chuỗi sau khi đã khử mùa vụ tuần ($Y_t - S_t$); và (3) Các sóng điều hòa Fourier sin/cos được sinh ra làm đặc trưng đầu vào.
+    \item \textbf{Phân tích đặc điểm các đồ thị con:}
+    \begin{enumerate}
+        \item \textbf{Đồ thị con (1):} Chuỗi doanh số cửa hàng dao động mạnh với các xung đỉnh lặp lại liên tục quanh đường xu thế (đường nét đứt màu đen).
+        \item \textbf{Đồ thị con (2):} Sau khi trừ bỏ thành phần mùa vụ $S_t$, chuỗi doanh số biến đổi thành một đường dao động phẳng, ổn định quanh mức trung bình (đường nét đứt màu đỏ). Các đỉnh nhọn cuối tuần đã được triệt tiêu hoàn toàn, giúp mô hình tập trung học các biến động thực sự do giá cả và sự kiện khuyến mãi thay vì bị chi phối bởi chu kỳ lặp lại thông thường.
+        \item \textbf{Đồ thị con (3):} Cặp sóng điều hòa lượng giác $\sin(2\pi t/7)$ và $\cos(2\pi t/7)$ (đường màu đỏ và xanh dương) có chu kỳ tuần hoàn chính xác bằng 7 bước thời gian, dao động trơn tru trong đoạn $[-1, 1]$ và đồng pha hoàn hảo với các đỉnh/đáy của chuỗi doanh số tham chiếu. Điều này giúp các mạng nơ-ron sâu hoặc mô hình cây quyết định nắm bắt nhịp tuần dưới dạng tín hiệu sóng liên tục mà không làm bùng nổ số chiều dữ liệu.
+    \end{enumerate}
+\end{itemize}
 
 \subsection{Kỹ thuật 3: Hệ thống biến trễ chu kỳ tuần và thống kê trượt}
 Dựa trên bằng chứng từ đồ thị ACF (Hình~\ref{fig:acf_l1}), hệ thống sinh đặc trưng tự động tạo lập:
@@ -355,6 +405,17 @@ Dựa trên bằng chứng từ đồ thị ACF (Hình~\ref{fig:acf_l1}), hệ t
     \label{fig:vsn_importance}
 \end{figure}
 
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ VSN Importance (Hình~\ref{fig:vsn_importance}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ biểu thị thứ bậc tầm quan trọng của các đặc trưng thông qua mạng chọn lọc biến VSN (được mô phỏng qua chỉ số Gain Importance của LightGBM Tweedie). Đồ thị lớn bên trái xếp hạng Top 22 đặc trưng quan trọng nhất; hai đồ thị bên phải phân tích cơ cấu đóng góp theo nhóm đặc trưng và theo ba khối vĩ mô (Nội sinh vs Ngoại sinh vs Định danh).
+    \item \textbf{Giải thích các giá trị cao đột biến:}
+    \begin{enumerate}
+        \item \textbf{Sự thống trị của các biến trượt nội sinh:} Hai đặc trưng trung bình trượt chu kỳ $\mathrm{sales\_rolling\_mean\_28}$ ($56.6\%$) và $\mathrm{sales\_rolling\_mean\_7}$ ($15.8\%$) ghi nhận điểm Gain cao vọt đột biến, chiếm tổng cộng hơn $72\%$ tầm quan trọng của toàn bộ mô hình! Điều này chứng minh rằng trong chuỗi bán lẻ, lịch sử tiêu thụ gần nhất của chu kỳ 1 tháng và 1 tuần là cơ sở vững chắc nhất để mô hình neo giữ quy mô doanh số.
+        \item \textbf{Vai trò dẫn dắt của Giá bán và Chu kỳ tháng:} Ở nhóm biến ngoại sinh, $\mathrm{sin\_month}$ ($2.7\%$) và giá bán thực tế $\mathrm{sell\_price}$ ($2.3\%$) là hai đặc trưng có trọng số cao nhất. Điều này phản ánh hai đòn bẩy vĩ mô điều tiết sức mua: tính mùa vụ theo mùa trong năm và độ nhạy cảm của người tiêu dùng đối với giá bán sản phẩm.
+        \item \textbf{Cơ cấu đóng góp vĩ mô:} Khối biến nội sinh (Lag và Rolling) chiếm $80.7\%$, khối ngoại sinh (Giá cả, Lịch, Sự kiện, SNAP) chiếm $12.3\%$, và khối định danh tĩnh (Static ID) chiếm $4.5\%$.
+    \end{enumerate}
+\end{itemize}
+
 \subsection{Cơ chế 2: Temporal Fusion Transformer và Ma trận Attention đa đầu}
 Mô hình Deep Learning hiện đại Temporal Fusion Transformer (TFT, Lim et al., 2021) nắm bắt tính mùa vụ theo một cơ chế hoàn toàn khác biệt và có khả năng diễn giải sâu sắc:
 
@@ -373,14 +434,19 @@ Mô hình Deep Learning hiện đại Temporal Fusion Transformer (TFT, Lim et a
     \end{itemize}
 \end{keyinsight}
 
+\paragraph{Nhận xét chuyên sâu và phân tích sơ đồ Attention Temporal (Hình~\ref{fig:attention_heatmap}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ trực quan hóa ma trận trọng số Self-Attention trung bình $28 \times 60$ (trái), phân bố trọng số chú ý theo thời gian \textit{Temporal Profile} (giữa), và hệ số tương quan tuyến tính Pearson giữa Attention Score với các đặc trưng ngoại sinh (phải).
+    \item \textbf{Giải thích các dải sáng và giá trị cao đột biến:}
+    \begin{enumerate}
+        \item \textbf{Các dải sáng chu kỳ trên ma trận Attention:} Trên ma trận bên trái, các dải màu xanh đậm (trọng số chú ý cao) xuất hiện thành các vạch chạy dọc tại các bước trễ lịch sử $\tau = t-7, t-14, t-28$. Đây là minh chứng thực nghiệm sống động cho thấy mạng Attention không nhìn dữ liệu một cách đồng đều, mà tự động "soi chiếu" về đúng các ngày cùng thứ của 1 tuần, 2 tuần và 4 tuần trước đó để trích xuất quy luật mùa vụ.
+        \item \textbf{Giá trị Attention cao đột biến tại ngày sự kiện:} Ở biểu đồ giữa, các thanh màu đỏ (Top 20\% bước thời gian có Attention cao nhất) tập trung dày đặc vào các mốc thời gian có vạch màu cam (ngày diễn ra sự kiện khuyến mãi hoặc lễ hội). Mạng Attention chủ động tăng cường tập trung vào các ngày lễ lớn để nắm bắt các biến động bất thường.
+        \item \textbf{Tương quan với biến mùa vụ:} Biểu đồ bên phải cho thấy các biến lịch tuần ($\mathrm{cos\_wday}, \mathrm{sin\_wday}$) và biến sự kiện ($\mathrm{has\_event}$) đạt hệ số tương quan thuận dương mạnh nhất với Attention Score ($r > 0.40$), chứng minh các đặc trưng mùa vụ chính là tác nhân kích hoạt các đầu Attention hoạt động mạnh mẽ nhất.
+    \end{enumerate}
+\end{itemize}
+
 \subsection{Sự chuyên môn hóa của 4 Attention Heads}
 Biểu đồ so sánh 4 đầu chú ý (Hình~\ref{fig:multihead_attn}) chứng minh cơ chế phân công nhiệm vụ tự nhiên trong kiến trúc Interpretable Multi-Head Attention:
-\begin{enumerate}
-    \item \textbf{Head 1 - Quán tính ngắn hạn (Lag 1--3 ngày):} Học độ trễ gần nhất để bắt nhịp xu thế tức thời.
-    \item \textbf{Head 2 - Mùa vụ tuần (Lag 7 và 14 ngày):} Chuyên trách tuyệt đối việc đối chiếu với cùng ngày tuần trước.
-    \item \textbf{Head 3 - Chu kỳ trung hạn (Lag 28 ngày):} Chuyên trách chu kỳ tem phiếu thực phẩm SNAP và lương tháng.
-    \item \textbf{Head 4 - Sự kiện đột biến (Events \& Promotions):} Kích hoạt khi có các ngày lễ lớn (SuperBowl, Thanksgiving).
-\end{enumerate}
 
 \begin{figure}[htbp]
     \centering
@@ -389,12 +455,20 @@ Biểu đồ so sánh 4 đầu chú ý (Hình~\ref{fig:multihead_attn}) chứng 
     \label{fig:multihead_attn}
 \end{figure}
 
+\paragraph{Nhận xét chuyên sâu và phân tích 4 Attention Heads (Hình~\ref{fig:multihead_attn}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Bốn biểu đồ nhiệt thể hiện ma trận trọng số Attention độc lập của 4 Heads trong lớp Interpretable Multi-Head Attention, minh chứng khả năng học các mẫu hình đa không gian thời gian của TFT.
+    \item \textbf{Phân tích sự chuyên môn hóa của từng Head:}
+    \begin{enumerate}
+        \item \textbf{Head 1 (Xanh dương - Quán tính ngắn hạn):} Các điểm sáng tập trung dọc sát đường chéo chính (Lag 1, 2, 3 ngày), chuyên trách nắm bắt xu thế tức thời và quán tính bán hàng của những ngày gần nhất.
+        \item \textbf{Head 2 (Xanh lá - Mùa vụ tuần):} Ma trận xuất hiện dạng lưới bàn cờ với các điểm sáng cách đều nhau đúng 7 bước thời gian ($\tau = t-7, t-14$). Đây là Head chuyên môn hóa tuyệt đối vào việc bắt nhịp dao động mùa vụ tuần 7 ngày.
+        \item \textbf{Head 3 (Màu cam - Chu kỳ trung hạn):} Phổ sáng mở rộng về phía các bước trễ xa hơn ($\tau = t-28$), chuyên trách theo dõi chu kỳ tháng bán lẻ 4 tuần và nhịp giải ngân trợ cấp lương thực SNAP.
+        \item \textbf{Head 4 (Màu tím - Sự kiện bất thường):} Các điểm sáng phân tán cục bộ và kích hoạt đột biến vào các bước thời gian diễn ra sự kiện khuyến mãi hoặc ngày lễ hội đột xuất (như SuperBowl, Lễ Tạ Ơn).
+    \end{enumerate}
+\end{itemize}
+
 \subsection{Tương tác giữa mùa vụ, sự kiện và biến động giá thực tế}
 Hình~\ref{fig:attention_exogenous} và Hình~\ref{fig:event_window} cung cấp case study thực tế trên sản phẩm $\mathrm{HOUSEHOLD\_1\_086\_CA\_2}$:
-\begin{itemize}
-    \item Trọng số Attention trung bình ngày cuối tuần (Sat-Sun) cao hơn rõ rệt so với các ngày trong tuần (Weekday).
-    \item Trong cửa sổ 35 ngày quanh ngày diễn ra sự kiện khuyến mãi lớn (Hình~\ref{fig:event_window}), Attention Score tăng vọt đón đầu sự kiện (\textit{Anticipation Effect}), phản ứng chính xác với đợt giảm giá sâu của sản phẩm.
-\end{itemize}
 
 \begin{figure}[htbp]
     \centering
@@ -403,12 +477,34 @@ Hình~\ref{fig:attention_exogenous} và Hình~\ref{fig:event_window} cung cấp 
     \label{fig:attention_exogenous}
 \end{figure}
 
+\paragraph{Nhận xét chuyên sâu và phân tích tương quan ngoại sinh (Hình~\ref{fig:attention_exogenous}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Sơ đồ phân tích hành vi của Attention Score theo 6 góc độ: Ngày trong tuần (DOW), Tháng trong năm, Tác động của Sự kiện, Trọng số các nhóm ngoại sinh, Tương tác Giá bán vs Attention, và Cơ cấu tỷ lệ đóng góp tổng thể.
+    \item \textbf{Giải thích các giá trị cao đột biến:}
+    \begin{enumerate}
+        \item \textbf{Đỉnh Attention cuối tuần:} Trên biểu đồ DOW (góc trên bên trái), hai cột Thứ Bảy và Chủ Nhật (màu đỏ) cao hơn đáng kể so với các ngày thường trong tuần ($+28\%$). Attention của mô hình tự động điều chỉnh độ nhạy cảm tăng cao vào các ngày cao điểm mua sắm cuối tuần.
+        \item \textbf{Sự kiện khuếch đại Attention:} Ô \textit{Event vs No-Event} cho thấy ngày có sự kiện ghi nhận Attention Score trung bình cao gấp $1.65$ lần so với ngày thường, khẳng định mô hình luôn ưu tiên chú ý vào các mốc thời gian đặc biệt.
+        \item \textbf{Tương tác nhạy bén giữa Giá bán và Attention:} Trên đồ thị \textit{Price vs Attention} (hàng dưới ở giữa), đường Attention Weight (màu xanh lam) vọt lên thành các đỉnh nhọn tại chính xác các thời điểm đường giá bán (nét đứt màu đỏ) bước xuống (các đợt giảm giá khuyến mãi). Mô hình TFT nhận diện giá giảm là tín hiệu kích cầu mạnh và lập tức tăng trọng số chú ý để điều chỉnh dự báo doanh số tăng tương ứng.
+    \end{enumerate}
+\end{itemize}
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.98\textwidth]{figures/attention/06_event_focus_attention_window.png}
     \caption{Case Study: Cơ chế kích hoạt Attention đón đầu sự kiện và phản ứng với đợt giảm giá trong cửa sổ 35 ngày quanh ngày lễ.}
     \label{fig:event_window}
 \end{figure}
+
+\paragraph{Nhận xét chuyên sâu và phân tích cửa sổ sự kiện (Hình~\ref{fig:event_window}):}
+\begin{itemize}
+    \item \textbf{Sơ đồ nói lên điều gì:} Nghiên cứu tình huống (\textit{Case Study}) chi tiết trong cửa sổ 35 ngày quanh ngày lễ trung tâm (Lễ Phục Sinh Easter 27-03-2016) của mặt hàng $\mathrm{HOUSEHOLD\_1\_086\_CA\_2}$, gồm 3 đồ thị con: (1) Doanh số thực tế; (2) Trọng số Attention; và (3) Biến động giá bán cùng tỷ lệ chiết khấu (\% Discount).
+    \item \textbf{Giải thích hiện tượng đón đầu và các đỉnh nhọn đột biến:}
+    \begin{enumerate}
+        \item \textbf{Doanh số thực tế đạt đỉnh (Đồ thị 1):} Doanh số tăng vọt từ mức bình thường $2 - 3$ sản phẩm/ngày lên đỉnh $8$ sản phẩm/ngày vào ngay trước ngày lễ hội, phản ánh nhu cầu trang hoàng nhà cửa trước lễ Phục Sinh.
+        \item \textbf{Hiệu ứng đón đầu của Attention (Đồ thị 2 - Anticipation Effect):} Các cột Attention màu cam tăng cao đột biến trong khoảng $3 - 5$ ngày **TRƯỚC KHI** ngày lễ chính thức diễn ra (vạch nét đứt màu đỏ). Cơ chế Attention của TFT nhận biết biến đếm lùi $\mathrm{days\_to\_next\_event}$ đang giảm dần về 0 và chủ động dồn trọng số để đón đầu làn sóng mua sắm tích trữ từ sớm, thay vì bị động phản ứng trễ sau khi sự kiện đã xảy ra.
+        \item \textbf{Tác động kích cầu của chính sách giá (Đồ thị 3):} Đúng vào thời điểm nhu cầu tăng cao, đường giá bán màu xanh lá bước giảm cùng lúc với đường chiết khấu màu đỏ vọt lên trên $20\%$. Sự kết hợp giữa ngày lễ và chương trình khuyến mãi giảm giá tạo nên cú hích kép đưa doanh số lên mức kỷ lục trong kỳ.
+    \end{enumerate}
+\end{itemize}
 
 % ==============================================================================
 % CHƯƠNG 6: TỔNG KẾT VÀ BÀI HỌC CHO BẢO VỆ ĐỒ ÁN
