@@ -22,7 +22,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-from model_arima_pure import PureARIMAModel
+from model_arima_pure import PureARIMAModel, ARIMAFitError, ARIMAPredictError, ARIMANotFittedError
 
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
@@ -142,15 +142,15 @@ class PureARIMAPipeline:
         dates_test = df_test["date"].dt.strftime("%d-%m-%Y").tolist()
         d_num_test = df_test["d_num"].tolist()
 
-        # Fit mô hình ARIMA thuần túy
+        # Fit mô hình ARIMA thuần túy — ném ARIMAFitError nếu thất bại (Hướng A)
         model = PureARIMAModel(order=self.order, name=f"ARIMA_{series_id}")
-        model.fit(y_train)
+        model.fit(y_train)   # ARIMAFitError được để truyền lên trên
 
-        # Dự báo
+        # Dự báo — ném ARIMAPredictError nếu thất bại (Hướng A)
         y_pred, ci_lo, ci_hi = model.predict(
             horizon=len(y_test),
             alpha=0.05,
-        )
+        )  # ARIMAPredictError được để truyền lên trên
 
         metrics = _evaluate(y_test, y_pred)
 
@@ -167,11 +167,12 @@ class PureARIMAPipeline:
             "date":           dates_test,
             "actual_sales":   y_test,
             "forecast_arima": y_pred,
-            "ci_lower_95":    ci_lo if ci_lo is not None else y_pred,
-            "ci_upper_95":    ci_hi if ci_hi is not None else y_pred,
+            "ci_lower_95":    ci_lo,   # luôn là ndarray vì không có fallback
+            "ci_upper_95":    ci_hi,
             "error_abs":      np.abs(y_test - y_pred),
             "error_pct":      err_pct,
         })
+
 
         return {
             "series_id":       series_id,

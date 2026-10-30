@@ -28,7 +28,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-from model_arima import M5ARIMABaseline
+from model_arima import M5ARIMABaseline, SARIMAFitError, SARIMAPredictError, SARIMANotFittedError
 
 # ── Metrics ────────────────────────────────────────────────────────────────────
 
@@ -144,20 +144,20 @@ class ARIMAPipeline:
                 exog_train = df_train[exog_cols].values.astype(float)
                 exog_test  = df_test[exog_cols].values.astype(float)
 
-        # Fit & Predict
+        # Fit & Predict — SARIMAFitError / SARIMAPredictError nếu thất bại (Hướng A)
         model = M5ARIMABaseline(
             order=self.order,
             seasonal_order=self.seasonal_order,
-            name=f"ARIMA_{store_id}",
+            name=f"SARIMA_{store_id}",
         )
-        model.fit(y_train, exog_train=exog_train)
+        model.fit(y_train, exog_train=exog_train)  # SARIMAFitError truyền lên trên
 
-        horizon = len(y_test)   # thường = 28, nhưng có thể nhỏ hơn ở biên
+        horizon = len(y_test)
         y_pred, lower_b, upper_b = model.predict(
             horizon=horizon,
             exog_future=exog_test,
             return_conf_int=True,
-        )
+        )  # SARIMAPredictError truyền lên trên
 
         metrics = _evaluate(y_test, y_pred)
 
@@ -170,16 +170,16 @@ class ARIMAPipeline:
         )
 
         df_forecast = pd.DataFrame({
-            "store_id":       store_id,
-            "d_num":          d_num_test,
-            "date":           dates_test,
-            "actual_sales":   y_test,
-            "forecast_arima": y_pred,
-            # Nếu CI không tính được, lấy giá trị forecast làm CI (width=0)
-            "ci_lower_95":    lower_b if lower_b is not None else y_pred,
-            "ci_upper_95":    upper_b if upper_b is not None else y_pred,
-            "error_abs":      np.abs(y_test - y_pred),
-            "error_pct":      err_pct,
+            "store_id":        store_id,
+            "d_num":           d_num_test,
+            "date":            dates_test,
+            "actual_sales":    y_test,
+            "forecast_sarima": y_pred,
+            # Luôn có CI vì không có fallback (Hướng A)
+            "ci_lower_95":     lower_b,
+            "ci_upper_95":     upper_b,
+            "error_abs":       np.abs(y_test - y_pred),
+            "error_pct":       err_pct,
         })
 
         return {

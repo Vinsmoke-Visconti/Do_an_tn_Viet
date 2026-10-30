@@ -79,7 +79,7 @@ def plot_arima_forecast_comparison(
         ax.plot(x, df_fc["actual_sales"],
                 label="Actual (Ground Truth)",
                 color=_COLORS["actual"], lw=2, marker="o", ms=4)
-        ax.plot(x, df_fc["forecast_arima"],
+        ax.plot(x, df_fc["forecast_sarima"],
                 label="ARIMA/SARIMAX Forecast",
                 color=_COLORS["pred"], lw=2, ls="--", marker="s", ms=4)
         ax.fill_between(x,
@@ -183,7 +183,7 @@ def plot_daily_error_distribution(full_forecast_df: pd.DataFrame, output_path: s
     for d in d_nums_sorted:
         grp = df_s[df_s["d_num"] == d]
         y    = grp["actual_sales"].values.astype(float)
-        yhat = grp["forecast_arima"].values.astype(float)
+        yhat = grp["forecast_sarima"].values.astype(float)
         denom = np.sum(np.abs(y))
         wmape = float(np.sum(np.abs(y - yhat)) / denom * 100) if denom > 0 else 0.0
         mae   = float(np.mean(np.abs(y - yhat)))
