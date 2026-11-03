@@ -276,7 +276,7 @@ class MultiLevelARIMAPipeline:
             key=lambda x: int(x[2:]),
         )
         d_nums = np.array([int(c[2:]) for c in d_cols], dtype=int)
-        print(f" {len(df_wide):,} SKUs loaded.")
+        print(f" {len(df_wide):,} SKUs loaded.", flush=True)
 
         # Filter out already-done series
         if done_sids:
@@ -343,7 +343,7 @@ class MultiLevelARIMAPipeline:
                 f"    [L12] {total_done:,}/{n_total:,} | "
                 f"elapsed={elapsed/60:.1f}min | ETA={eta/60:.1f}min | "
                 f"ok={n_ok:,} err={n_error:,}"
-            )
+            , flush=True)
 
         elapsed = time.time() - t0
         m_df    = pd.read_csv(m_path)

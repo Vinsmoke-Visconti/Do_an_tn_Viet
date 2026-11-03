@@ -1,0 +1,20 @@
+{
+    "level": "L12",
+    "model": "ARIMA[7, 1, 1]",
+    "order": [
+        7,
+        1,
+        1
+    ],
+    "train_from": "d_1 (2011-01-29)",
+    "train_to": "d_1885",
+    "test_from": "d_1886",
+    "test_to": "d_1913",
+    "test_days": 28,
+    "n_total": 30490,
+    "n_ok": 30489,
+    "n_error": 1,
+    "elapsed_s": 6852.0,
+    "avg_wmape": 129.3524,
+    "avg_rmse": 1.4199
+}

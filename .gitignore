@@ -9,6 +9,7 @@ new_source/data/processed/*.parquet
 *.parquet
 *.csv.zip
 *.csv.gz
+baseline_arima/outputs/results/arima_l12_forecast.csv
 
 # Trained Models
 new_source/outputs/models/*.pkl
