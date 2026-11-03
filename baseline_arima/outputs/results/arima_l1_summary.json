@@ -1,0 +1,35 @@
+{
+    "level": "L1",
+    "model": "ARIMA[7, 1, 1]",
+    "order": [
+        7,
+        1,
+        1
+    ],
+    "train_from": "d_1 (2011-01-29)",
+    "train_to": "d_1885",
+    "test_from": "d_1886",
+    "test_to": "d_1913",
+    "test_days": 28,
+    "n_series": 1,
+    "n_ok": 1,
+    "n_error": 0,
+    "elapsed_s": 1.44,
+    "errors": [],
+    "metrics": [
+        {
+            "series_id": "NATIONAL_TOTAL",
+            "RMSE": 3819.1869,
+            "MAE": 2950.7575,
+            "WMAPE (%)": 6.9803,
+            "sMAPE (%)": 6.805
+        },
+        {
+            "series_id": "AVERAGE",
+            "RMSE": 3819.1869,
+            "MAE": 2950.7575,
+            "WMAPE (%)": 6.9803,
+            "sMAPE (%)": 6.805
+        }
+    ]
+}

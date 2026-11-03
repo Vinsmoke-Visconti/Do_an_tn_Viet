@@ -1,0 +1,98 @@
+{
+    "level": "L3",
+    "model": "ARIMA[7, 1, 1]",
+    "order": [
+        7,
+        1,
+        1
+    ],
+    "train_from": "d_1 (2011-01-29)",
+    "train_to": "d_1885",
+    "test_from": "d_1886",
+    "test_to": "d_1913",
+    "test_days": 28,
+    "n_series": 10,
+    "n_ok": 10,
+    "n_error": 0,
+    "elapsed_s": 6.91,
+    "errors": [],
+    "metrics": [
+        {
+            "series_id": "CA_1",
+            "RMSE": 635.7492,
+            "MAE": 473.7937,
+            "WMAPE (%)": 10.3679,
+            "sMAPE (%)": 10.022
+        },
+        {
+            "series_id": "CA_2",
+            "RMSE": 402.6619,
+            "MAE": 341.0911,
+            "WMAPE (%)": 7.6385,
+            "sMAPE (%)": 7.9876
+        },
+        {
+            "series_id": "CA_3",
+            "RMSE": 697.3742,
+            "MAE": 577.8584,
+            "WMAPE (%)": 9.1427,
+            "sMAPE (%)": 9.033
+        },
+        {
+            "series_id": "CA_4",
+            "RMSE": 259.8837,
+            "MAE": 202.4511,
+            "WMAPE (%)": 7.6383,
+            "sMAPE (%)": 7.5245
+        },
+        {
+            "series_id": "TX_1",
+            "RMSE": 253.2491,
+            "MAE": 207.5453,
+            "WMAPE (%)": 6.2638,
+            "sMAPE (%)": 6.4196
+        },
+        {
+            "series_id": "TX_2",
+            "RMSE": 436.203,
+            "MAE": 366.586,
+            "WMAPE (%)": 9.3223,
+            "sMAPE (%)": 9.384
+        },
+        {
+            "series_id": "TX_3",
+            "RMSE": 345.6028,
+            "MAE": 282.9952,
+            "WMAPE (%)": 7.4457,
+            "sMAPE (%)": 7.5228
+        },
+        {
+            "series_id": "WI_1",
+            "RMSE": 521.7273,
+            "MAE": 368.4112,
+            "WMAPE (%)": 9.6154,
+            "sMAPE (%)": 8.8166
+        },
+        {
+            "series_id": "WI_2",
+            "RMSE": 1446.7431,
+            "MAE": 1130.7066,
+            "WMAPE (%)": 20.9584,
+            "sMAPE (%)": 21.5784
+        },
+        {
+            "series_id": "WI_3",
+            "RMSE": 627.8712,
+            "MAE": 470.0846,
+            "WMAPE (%)": 11.7721,
+            "sMAPE (%)": 11.5418
+        },
+        {
+            "series_id": "AVERAGE",
+            "RMSE": 562.7066,
+            "MAE": 442.1523,
+            "WMAPE (%)": 10.0165,
+            "sMAPE (%)": 9.983
+        }
+    ]
+}

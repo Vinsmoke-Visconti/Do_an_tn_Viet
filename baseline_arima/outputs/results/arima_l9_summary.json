@@ -1,0 +1,518 @@
+{
+    "level": "L9",
+    "model": "ARIMA[7, 1, 1]",
+    "order": [
+        7,
+        1,
+        1
+    ],
+    "train_from": "d_1 (2011-01-29)",
+    "train_to": "d_1885",
+    "test_from": "d_1886",
+    "test_to": "d_1913",
+    "test_days": 28,
+    "n_series": 70,
+    "n_ok": 70,
+    "n_error": 0,
+    "elapsed_s": 48.73,
+    "errors": [],
+    "metrics": [
+        {
+            "series_id": "CA_1_FOODS_1",
+            "RMSE": 134.5883,
+            "MAE": 127.7621,
+            "WMAPE (%)": 44.6219,
+            "sMAPE (%)": 37.8436
+        },
+        {
+            "series_id": "CA_1_FOODS_2",
+            "RMSE": 178.7212,
+            "MAE": 139.6566,
+            "WMAPE (%)": 26.071,
+            "sMAPE (%)": 27.3389
+        },
+        {
+            "series_id": "CA_1_FOODS_3",
+            "RMSE": 270.7272,
+            "MAE": 215.5743,
+            "WMAPE (%)": 9.7906,
+            "sMAPE (%)": 9.6136
+        },
+        {
+            "series_id": "CA_1_HOBBIES_1",
+            "RMSE": 118.9192,
+            "MAE": 94.5729,
+            "WMAPE (%)": 18.9254,
+            "sMAPE (%)": 18.9698
+        },
+        {
+            "series_id": "CA_1_HOBBIES_2",
+            "RMSE": 13.986,
+            "MAE": 12.363,
+            "WMAPE (%)": 32.6261,
+            "sMAPE (%)": 32.4371
+        },
+        {
+            "series_id": "CA_1_HOUSEHOLD_1",
+            "RMSE": 148.5193,
+            "MAE": 113.4622,
+            "WMAPE (%)": 14.4354,
+            "sMAPE (%)": 14.0521
+        },
+        {
+            "series_id": "CA_1_HOUSEHOLD_2",
+            "RMSE": 48.6721,
+            "MAE": 34.2305,
+            "WMAPE (%)": 15.3944,
+            "sMAPE (%)": 14.4988
+        },
+        {
+            "series_id": "CA_2_FOODS_1",
+            "RMSE": 126.0322,
+            "MAE": 112.7859,
+            "WMAPE (%)": 25.3106,
+            "sMAPE (%)": 24.5429
+        },
+        {
+            "series_id": "CA_2_FOODS_2",
+            "RMSE": 84.7323,
+            "MAE": 68.7994,
+            "WMAPE (%)": 13.6584,
+            "sMAPE (%)": 13.1948
+        },
+        {
+            "series_id": "CA_2_FOODS_3",
+            "RMSE": 214.757,
+            "MAE": 176.3429,
+            "WMAPE (%)": 8.9532,
+            "sMAPE (%)": 9.0101
+        },
+        {
+            "series_id": "CA_2_HOBBIES_1",
+            "RMSE": 85.0514,
+            "MAE": 71.5296,
+            "WMAPE (%)": 19.022,
+            "sMAPE (%)": 19.2535
+        },
+        {
+            "series_id": "CA_2_HOBBIES_2",
+            "RMSE": 10.5358,
+            "MAE": 8.4256,
+            "WMAPE (%)": 21.1017,
+            "sMAPE (%)": 21.6574
+        },
+        {
+            "series_id": "CA_2_HOUSEHOLD_1",
+            "RMSE": 107.6535,
+            "MAE": 82.9683,
+            "WMAPE (%)": 10.2079,
+            "sMAPE (%)": 10.4367
+        },
+        {
+            "series_id": "CA_2_HOUSEHOLD_2",
+            "RMSE": 55.9268,
+            "MAE": 44.1947,
+            "WMAPE (%)": 13.9102,
+            "sMAPE (%)": 13.9
+        },
+        {
+            "series_id": "CA_3_FOODS_1",
+            "RMSE": 156.7076,
+            "MAE": 142.5843,
+            "WMAPE (%)": 38.6632,
+            "sMAPE (%)": 33.9982
+        },
+        {
+            "series_id": "CA_3_FOODS_2",
+            "RMSE": 177.4869,
+            "MAE": 129.3482,
+            "WMAPE (%)": 18.6727,
+            "sMAPE (%)": 18.6359
+        },
+        {
+            "series_id": "CA_3_FOODS_3",
+            "RMSE": 423.1491,
+            "MAE": 360.4313,
+            "WMAPE (%)": 12.4099,
+            "sMAPE (%)": 12.266
+        },
+        {
+            "series_id": "CA_3_HOBBIES_1",
+            "RMSE": 98.1425,
+            "MAE": 77.2325,
+            "WMAPE (%)": 14.8565,
+            "sMAPE (%)": 14.5518
+        },
+        {
+            "series_id": "CA_3_HOBBIES_2",
+            "RMSE": 11.699,
+            "MAE": 9.954,
+            "WMAPE (%)": 18.7937,
+            "sMAPE (%)": 18.7876
+        },
+        {
+            "series_id": "CA_3_HOUSEHOLD_1",
+            "RMSE": 193.5146,
+            "MAE": 147.3643,
+            "WMAPE (%)": 10.1155,
+            "sMAPE (%)": 9.705
+        },
+        {
+            "series_id": "CA_3_HOUSEHOLD_2",
+            "RMSE": 58.5664,
+            "MAE": 45.8543,
+            "WMAPE (%)": 14.1137,
+            "sMAPE (%)": 14.652
+        },
+        {
+            "series_id": "CA_4_FOODS_1",
+            "RMSE": 74.9497,
+            "MAE": 69.9398,
+            "WMAPE (%)": 33.6307,
+            "sMAPE (%)": 29.6509
+        },
+        {
+            "series_id": "CA_4_FOODS_2",
+            "RMSE": 77.6124,
+            "MAE": 56.7834,
+            "WMAPE (%)": 15.3469,
+            "sMAPE (%)": 15.1102
+        },
+        {
+            "series_id": "CA_4_FOODS_3",
+            "RMSE": 114.3114,
+            "MAE": 96.3922,
+            "WMAPE (%)": 8.3903,
+            "sMAPE (%)": 8.4682
+        },
+        {
+            "series_id": "CA_4_HOBBIES_1",
+            "RMSE": 53.5907,
+            "MAE": 41.2813,
+            "WMAPE (%)": 11.698,
+            "sMAPE (%)": 11.5445
+        },
+        {
+            "series_id": "CA_4_HOBBIES_2",
+            "RMSE": 5.3022,
+            "MAE": 4.5754,
+            "WMAPE (%)": 29.3162,
+            "sMAPE (%)": 28.6899
+        },
+        {
+            "series_id": "CA_4_HOUSEHOLD_1",
+            "RMSE": 73.3607,
+            "MAE": 52.9916,
+            "WMAPE (%)": 13.0533,
+            "sMAPE (%)": 12.6954
+        },
+        {
+            "series_id": "CA_4_HOUSEHOLD_2",
+            "RMSE": 29.0965,
+            "MAE": 23.1749,
+            "WMAPE (%)": 15.535,
+            "sMAPE (%)": 15.6601
+        },
+        {
+            "series_id": "TX_1_FOODS_1",
+            "RMSE": 54.9042,
+            "MAE": 43.2787,
+            "WMAPE (%)": 21.7637,
+            "sMAPE (%)": 21.2149
+        },
+        {
+            "series_id": "TX_1_FOODS_2",
+            "RMSE": 64.0327,
+            "MAE": 53.1438,
+            "WMAPE (%)": 14.4989,
+            "sMAPE (%)": 14.7939
+        },
+        {
+            "series_id": "TX_1_FOODS_3",
+            "RMSE": 164.7794,
+            "MAE": 135.0438,
+            "WMAPE (%)": 8.8134,
+            "sMAPE (%)": 8.9354
+        },
+        {
+            "series_id": "TX_1_HOBBIES_1",
+            "RMSE": 59.824,
+            "MAE": 38.5681,
+            "WMAPE (%)": 15.1822,
+            "sMAPE (%)": 14.3613
+        },
+        {
+            "series_id": "TX_1_HOBBIES_2",
+            "RMSE": 9.3793,
+            "MAE": 7.0407,
+            "WMAPE (%)": 21.1977,
+            "sMAPE (%)": 20.9263
+        },
+        {
+            "series_id": "TX_1_HOUSEHOLD_1",
+            "RMSE": 93.0664,
+            "MAE": 76.0225,
+            "WMAPE (%)": 10.3061,
+            "sMAPE (%)": 10.3501
+        },
+        {
+            "series_id": "TX_1_HOUSEHOLD_2",
+            "RMSE": 38.1146,
+            "MAE": 33.6979,
+            "WMAPE (%)": 17.6528,
+            "sMAPE (%)": 17.4738
+        },
+        {
+            "series_id": "TX_2_FOODS_1",
+            "RMSE": 135.2393,
+            "MAE": 132.9805,
+            "WMAPE (%)": 58.052,
+            "sMAPE (%)": 45.6389
+        },
+        {
+            "series_id": "TX_2_FOODS_2",
+            "RMSE": 68.5834,
+            "MAE": 55.1341,
+            "WMAPE (%)": 13.5477,
+            "sMAPE (%)": 13.716
+        },
+        {
+            "series_id": "TX_2_FOODS_3",
+            "RMSE": 266.4292,
+            "MAE": 239.5948,
+            "WMAPE (%)": 12.4149,
+            "sMAPE (%)": 12.431
+        },
+        {
+            "series_id": "TX_2_HOBBIES_1",
+            "RMSE": 57.4408,
+            "MAE": 45.3173,
+            "WMAPE (%)": 13.5117,
+            "sMAPE (%)": 13.661
+        },
+        {
+            "series_id": "TX_2_HOBBIES_2",
+            "RMSE": 16.8058,
+            "MAE": 13.914,
+            "WMAPE (%)": 30.9938,
+            "sMAPE (%)": 30.7001
+        },
+        {
+            "series_id": "TX_2_HOUSEHOLD_1",
+            "RMSE": 117.7719,
+            "MAE": 96.0284,
+            "WMAPE (%)": 12.3367,
+            "sMAPE (%)": 12.2353
+        },
+        {
+            "series_id": "TX_2_HOUSEHOLD_2",
+            "RMSE": 35.9264,
+            "MAE": 27.3887,
+            "WMAPE (%)": 13.1835,
+            "sMAPE (%)": 13.2731
+        },
+        {
+            "series_id": "TX_3_FOODS_1",
+            "RMSE": 61.916,
+            "MAE": 53.0972,
+            "WMAPE (%)": 19.876,
+            "sMAPE (%)": 18.908
+        },
+        {
+            "series_id": "TX_3_FOODS_2",
+            "RMSE": 133.7879,
+            "MAE": 107.7216,
+            "WMAPE (%)": 21.5412,
+            "sMAPE (%)": 22.4432
+        },
+        {
+            "series_id": "TX_3_FOODS_3",
+            "RMSE": 180.8895,
+            "MAE": 155.6441,
+            "WMAPE (%)": 9.2396,
+            "sMAPE (%)": 9.2934
+        },
+        {
+            "series_id": "TX_3_HOBBIES_1",
+            "RMSE": 57.4711,
+            "MAE": 47.9653,
+            "WMAPE (%)": 13.88,
+            "sMAPE (%)": 13.9054
+        },
+        {
+            "series_id": "TX_3_HOBBIES_2",
+            "RMSE": 22.1866,
+            "MAE": 18.1165,
+            "WMAPE (%)": 29.9623,
+            "sMAPE (%)": 32.7939
+        },
+        {
+            "series_id": "TX_3_HOUSEHOLD_1",
+            "RMSE": 144.7158,
+            "MAE": 119.1522,
+            "WMAPE (%)": 15.4765,
+            "sMAPE (%)": 15.7912
+        },
+        {
+            "series_id": "TX_3_HOUSEHOLD_2",
+            "RMSE": 25.4879,
+            "MAE": 21.5208,
+            "WMAPE (%)": 12.4321,
+            "sMAPE (%)": 12.5951
+        },
+        {
+            "series_id": "WI_1_FOODS_1",
+            "RMSE": 156.5992,
+            "MAE": 150.4389,
+            "WMAPE (%)": 50.1762,
+            "sMAPE (%)": 41.6366
+        },
+        {
+            "series_id": "WI_1_FOODS_2",
+            "RMSE": 162.045,
+            "MAE": 115.3377,
+            "WMAPE (%)": 17.2661,
+            "sMAPE (%)": 17.1915
+        },
+        {
+            "series_id": "WI_1_FOODS_3",
+            "RMSE": 247.764,
+            "MAE": 179.7506,
+            "WMAPE (%)": 10.7649,
+            "sMAPE (%)": 9.951
+        },
+        {
+            "series_id": "WI_1_HOBBIES_1",
+            "RMSE": 63.2232,
+            "MAE": 49.7585,
+            "WMAPE (%)": 12.9087,
+            "sMAPE (%)": 12.646
+        },
+        {
+            "series_id": "WI_1_HOBBIES_2",
+            "RMSE": 12.3556,
+            "MAE": 10.012,
+            "WMAPE (%)": 31.8564,
+            "sMAPE (%)": 32.5175
+        },
+        {
+            "series_id": "WI_1_HOUSEHOLD_1",
+            "RMSE": 125.0323,
+            "MAE": 94.8292,
+            "WMAPE (%)": 15.7655,
+            "sMAPE (%)": 15.6467
+        },
+        {
+            "series_id": "WI_1_HOUSEHOLD_2",
+            "RMSE": 34.0027,
+            "MAE": 24.8761,
+            "WMAPE (%)": 14.1773,
+            "sMAPE (%)": 13.7631
+        },
+        {
+            "series_id": "WI_2_FOODS_1",
+            "RMSE": 82.317,
+            "MAE": 68.8905,
+            "WMAPE (%)": 18.2733,
+            "sMAPE (%)": 18.4008
+        },
+        {
+            "series_id": "WI_2_FOODS_2",
+            "RMSE": 591.1182,
+            "MAE": 463.258,
+            "WMAPE (%)": 38.1911,
+            "sMAPE (%)": 41.5197
+        },
+        {
+            "series_id": "WI_2_FOODS_3",
+            "RMSE": 574.7983,
+            "MAE": 454.1218,
+            "WMAPE (%)": 19.0407,
+            "sMAPE (%)": 19.3825
+        },
+        {
+            "series_id": "WI_2_HOBBIES_1",
+            "RMSE": 53.4774,
+            "MAE": 40.1274,
+            "WMAPE (%)": 15.5425,
+            "sMAPE (%)": 15.6555
+        },
+        {
+            "series_id": "WI_2_HOBBIES_2",
+            "RMSE": 8.9041,
+            "MAE": 7.3949,
+            "WMAPE (%)": 22.8539,
+            "sMAPE (%)": 23.5083
+        },
+        {
+            "series_id": "WI_2_HOUSEHOLD_1",
+            "RMSE": 250.9326,
+            "MAE": 178.1288,
+            "WMAPE (%)": 18.0776,
+            "sMAPE (%)": 17.6452
+        },
+        {
+            "series_id": "WI_2_HOUSEHOLD_2",
+            "RMSE": 35.2625,
+            "MAE": 27.0641,
+            "WMAPE (%)": 18.7806,
+            "sMAPE (%)": 19.0122
+        },
+        {
+            "series_id": "WI_3_FOODS_1",
+            "RMSE": 80.6812,
+            "MAE": 65.4956,
+            "WMAPE (%)": 27.6812,
+            "sMAPE (%)": 26.5291
+        },
+        {
+            "series_id": "WI_3_FOODS_2",
+            "RMSE": 226.4868,
+            "MAE": 173.0754,
+            "WMAPE (%)": 29.1759,
+            "sMAPE (%)": 30.4738
+        },
+        {
+            "series_id": "WI_3_FOODS_3",
+            "RMSE": 322.5614,
+            "MAE": 267.6402,
+            "WMAPE (%)": 13.0282,
+            "sMAPE (%)": 12.8536
+        },
+        {
+            "series_id": "WI_3_HOBBIES_1",
+            "RMSE": 65.0923,
+            "MAE": 52.3757,
+            "WMAPE (%)": 21.1436,
+            "sMAPE (%)": 21.3924
+        },
+        {
+            "series_id": "WI_3_HOBBIES_2",
+            "RMSE": 9.9074,
+            "MAE": 8.2199,
+            "WMAPE (%)": 25.209,
+            "sMAPE (%)": 25.6412
+        },
+        {
+            "series_id": "WI_3_HOUSEHOLD_1",
+            "RMSE": 121.231,
+            "MAE": 94.2319,
+            "WMAPE (%)": 14.1733,
+            "sMAPE (%)": 14.2821
+        },
+        {
+            "series_id": "WI_3_HOUSEHOLD_2",
+            "RMSE": 26.1143,
+            "MAE": 19.7434,
+            "WMAPE (%)": 12.0465,
+            "sMAPE (%)": 11.6148
+        },
+        {
+            "series_id": "AVERAGE",
+            "RMSE": 117.2139,
+            "MAE": 94.6531,
+            "WMAPE (%)": 19.4374,
+            "sMAPE (%)": 18.9696
+        }
+    ]
+}

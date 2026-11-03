@@ -1,0 +1,49 @@
+{
+    "level": "L2",
+    "model": "ARIMA[7, 1, 1]",
+    "order": [
+        7,
+        1,
+        1
+    ],
+    "train_from": "d_1 (2011-01-29)",
+    "train_to": "d_1885",
+    "test_from": "d_1886",
+    "test_to": "d_1913",
+    "test_days": 28,
+    "n_series": 3,
+    "n_ok": 3,
+    "n_error": 0,
+    "elapsed_s": 1.79,
+    "errors": [],
+    "metrics": [
+        {
+            "series_id": "CA",
+            "RMSE": 1736.4235,
+            "MAE": 1430.0027,
+            "WMAPE (%)": 7.9418,
+            "sMAPE (%)": 7.7613
+        },
+        {
+            "series_id": "TX",
+            "RMSE": 904.4303,
+            "MAE": 706.4813,
+            "WMAPE (%)": 6.3955,
+            "sMAPE (%)": 6.4706
+        },
+        {
+            "series_id": "WI",
+            "RMSE": 2411.5957,
+            "MAE": 1792.019,
+            "WMAPE (%)": 13.5557,
+            "sMAPE (%)": 13.359
+        },
+        {
+            "series_id": "AVERAGE",
+            "RMSE": 1684.1498,
+            "MAE": 1309.501,
+            "WMAPE (%)": 9.2977,
+            "sMAPE (%)": 9.197
+        }
+    ]
+}
